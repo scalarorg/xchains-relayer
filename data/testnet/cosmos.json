@@ -1,0 +1,18 @@
+[
+  {
+    "chainId": "osmosis-6",
+    "denom": "uosmo",
+    "gasPrice": "0.0125",
+    "rpcUrl": "https://rpc-test.osmosis.zone:443",
+    "lcdUrl": "https://lcd-test.osmosis.zone",
+    "ws": "wss://rpc.testnet.osmosis.zone/websocket"
+  },
+  {
+    "chainId": "aura",
+    "denom": "uaura",
+    "gasPrice": "",
+    "rpcUrl": "",
+    "lcdUrl": "",
+    "ws": ""
+  }
+]
