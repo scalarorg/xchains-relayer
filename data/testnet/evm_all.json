@@ -1,0 +1,51 @@
+[
+  {
+    "id": "ethereum-sepolia",
+    "name": "ethereum-sepolia",
+    "rpcUrl": "https://rpc.sepolia.org",
+    "gateway": "0xd70943944567979d99800DD14b441B1D3A601A1D",
+    "finality": 1
+  },
+  {
+    "id": "Avalanche",
+    "name": "Avalanche",
+    "rpcUrl": "https://rpc.ankr.com/avalanche_fuji",
+    "finality": 1,
+    "gateway": "0xC249632c2D40b9001FE907806902f63038B737Ab"
+  },
+  {
+    "id": "Binance",
+    "name": "Binance",
+    "finality": 16,
+    "rpcUrl": "https://data-seed-prebsc-1-s2.binance.org:8545",
+    "gateway": "0x4D147dCb984e6affEEC47e44293DA442580A3Ec0"
+  },
+  {
+    "id": "arbitrum",
+    "name": "Arbitrum",
+    "finality": 500,
+    "rpcUrl": "https://goerli-rollup.arbitrum.io/rpc",
+    "gateway": "0xe432150cce91c13a887f7D836923d5597adD8E31"
+  },
+  {
+    "id": "Polygon",
+    "name": "Polygon",
+    "finality": 132,
+    "rpcUrl": "https://matic-mumbai.chainstacklabs.com",
+    "gateway": "0xBF62ef1486468a6bd26Dd669C06db43dEd5B849B"
+  },
+  {
+    "id": "Moonbeam",
+    "name": "Moonbeam",
+    "finality": 1,
+    "rpcUrl": "https://rpc.testnet.moonbeam.network",
+    "gateway": "0x5769D84DD62a6fD969856c75c7D321b84d455929"
+  },
+  {
+    "id": "Fantom",
+    "name": "Fantom",
+    "finality": 1,
+    "rpcUrl": "https://rpc.testnet.fantom.network",
+    "gateway": "0x97837985Ec0494E7b9C71f5D3f9250188477ae14"
+  }
+]

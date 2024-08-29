@@ -5,17 +5,17 @@ import { logger } from '../logger';
 export async function processBurningTxs(
   btcSignerClient: BtcClient,
   btcBroadcastClient: BtcClient,
-  burningPsbt: string
+  psbtb64: string
 ): Promise<void> {
-  await validateBurningTxs(btcBroadcastClient, burningPsbt);
-  await signAndBroadcasting(btcSignerClient, btcBroadcastClient, burningPsbt);
+  await validateBurningTxs(btcBroadcastClient, psbtb64);
+  await signAndBroadcasting(btcSignerClient, btcBroadcastClient, psbtb64);
 }
 
 // TODO: parsing and verify burning txs
-async function validateBurningTxs(btcBroadcastClient: BtcClient, tx: string): Promise<void> {
+async function validateBurningTxs(btcBroadcastClient: BtcClient, psbtb64: string): Promise<void> {
   try {
-    // await parseTx(tx);
-    // await verifyTx(client, tx);
+    // await parseTx(psbtb64);
+    // await verifyTx(client, psbtb64);
   } catch (e) {
     throw new Error(`Failed to validate tx: ${e}`);
   }

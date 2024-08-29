@@ -4,14 +4,4 @@ npx prisma db push
 #.2 generate db types
 npx prisma generate
 
-# start eth relayer server
-eth() {
-    yarn start:dev
-}
-
-# start btc relayer server
-btc() {
-    yarn start:scalar
-}
-
-$@
+yarn start:dev

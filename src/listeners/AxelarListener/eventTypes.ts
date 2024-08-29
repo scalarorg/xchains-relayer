@@ -16,16 +16,15 @@ export interface AxelarListenerEvent<T> {
 
 const parser = new Parser(new DatabaseClient());
 
-// const AxelarEVMCompletedEventTopicId = `tm.event='NewBlock' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS`;
-// const AxelarCosmosContractCallEventTopicId = `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.message_id EXISTS`
-// const AxelarCosmosContractCallWithTokenEventTopicId = `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.message_id EXISTS`;
-// const AxelarIBCCompleteEventTopicId = `tm.event='Tx' AND message.action='ExecuteMessage'`;
-
+const AxelarEVMCompletedEventTopicId = `tm.event='NewBlock' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS`;
 const AxelarCosmosContractCallEventTopicId = `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.message_id EXISTS`
-const AxelarEVMCompletedEventTopicId = `axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS`;
 const AxelarCosmosContractCallApprovedEventTopicId = `tm.event='NewBlock' AND axelar.evm.v1beta1.ContractCallApproved.event_id EXISTS`
-const AxelarCosmosContractCallWithTokenEventTopicId = `axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.message_id EXISTS`;
-const AxelarIBCCompleteEventTopicId = `message.action='ExecuteMessage'`;
+const AxelarCosmosContractCallWithTokenEventTopicId = `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.message_id EXISTS`;
+const AxelarIBCCompleteEventTopicId = `tm.event='Tx' AND message.action='ExecuteMessage'`;
+
+// const AxelarEVMCompletedEventTopicId = `axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS`;
+// const AxelarCosmosContractCallWithTokenEventTopicId = `axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.message_id EXISTS`;
+// const AxelarIBCCompleteEventTopicId = `message.action='ExecuteMessage'`;
 
 
 export const AxelarEVMCompletedEvent: AxelarListenerEvent<ExecuteRequest> = {

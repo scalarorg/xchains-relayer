@@ -4,7 +4,6 @@ import { logger } from '../logger';
 import { ContractCallSubmitted, ContractCallWithTokenSubmitted, IBCEvent } from '../types';
 import { validateProof } from './authHandler';
 import { BigNumber, ethers } from 'ethers';
-import { log } from 'console';
 
 const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');

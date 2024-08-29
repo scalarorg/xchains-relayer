@@ -50,12 +50,14 @@ export class AxelarListener {
 
     ws.addEventListener('message', (ev: MessageEvent<any>) => {
       // convert buffer to json
-      logger.debug(`[AxelarListener] Received message: ${ev.data.toString()}`);
+      // logger.debug(`[AxelarListener] Received message: ${ev.data.toString()}`);
       const _event = JSON.parse(ev.data.toString());
-
+      logger.debug(`[AxelarListener] Received message of topic : ${event.topicId} with query: ${_event.result.query}`);
       // check if the event topic is matched
-      if (!_event.result || _event.result.query !== event.topicId) return;
-
+      if (!_event.result || _event.result.query !== event.topicId) {
+        logger.debug(`[AxelarListener] Unmatched message: ${ev.data.toString()}`);
+        return;
+      }
       logger.debug(`[AxelarListener] Received ${event.type} event`);
 
       // parse the event data
@@ -66,6 +68,7 @@ export class AxelarListener {
         })
         .catch((e) => {
           logger.debug(`[AxelarListener] Failed to parse topic ${event.topicId} GMP event: ${e}`);
+
         });
     });
   }

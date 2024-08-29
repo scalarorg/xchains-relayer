@@ -11,7 +11,8 @@ import { EvmClient } from '../clients';
 import { env } from '../config';
 
 export function filterCosmosDestination(cosmosChains: CosmosNetworkConfig[]) {
-  if (env.CHAIN_ENV === 'devnet')
+  //Todo: TaiVV 20240829: Accept all destination chains not only cosmos chains
+  if (env.CHAIN_ENV === 'devnet' || env.CHAIN_ENV === 'testnet')
     return filter<EvmEvent<ContractCallWithTokenEventObject | ContractCallEventObject>>(() => true);
 
   return filter((event: EvmEvent<ContractCallWithTokenEventObject | ContractCallEventObject>) =>

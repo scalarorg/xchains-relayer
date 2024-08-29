@@ -21,12 +21,15 @@ const options = {
  * @returns BtcEventTransaction
  */
 export function createBtcEventTransaction(btcTransaction: BtcTransaction): BtcEventTransaction {
+  logger.info(`[createBtcEventTransaction] txHash: ${btcTransaction.vault_tx_hash_hex}`);
   const toAddress = `0x${Buffer.from(btcTransaction.chain_id_user_address, 'base64').toString(
     'hex'
   )}`;
+  logger.info(`[createBtcEventTransaction] amount_minting: ${btcTransaction.amount_minting}`);
   const amount_decode = `0x${Buffer.from(btcTransaction.amount_minting, 'base64').toString('hex')}`;
   const amount = ethers.utils.parseUnits(String(Number(amount_decode)), 0);
 
+   logger.info(`[createBtcEventTransaction] toAddress: ${toAddress}, amount : ${amount}`);
   const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
 
   const payloadHash = ethers.utils.keccak256(payload);
@@ -66,7 +69,7 @@ export function createBtcEventTransaction(btcTransaction: BtcTransaction): BtcEv
  * @param channel: amqp.Channel
  * @param msg: amqp.Message | null
  */
-async function handleMessage(
+export async function handleMessage(
   db: DatabaseClient,
   axelarClient: AxelarClient,
   channel: amqp.Channel,
@@ -109,7 +112,7 @@ async function handleMessage(
     }
   }
 }
-async function handleBtcEvent(
+export async function handleBtcEvent(
   axelarClient: AxelarClient,
   channel: amqp.Channel,
   content: BtcEventTransaction,
@@ -127,25 +130,28 @@ async function handleBtcEvent(
 }
 export async function startRabbitMQRelayer(db: DatabaseClient, axelarClient: AxelarClient) {
   // Create a connection and a channel
-  amqp.connect(connectionString, (connectErr, connection: Connection) => {
-    connection.createChannel((channelErr, channel: Channel) => {
-      if (channelErr) {
-        logger.error('Failed to create a channel:', channelErr);
-        return;
-      }
-      logger.info('RabbitMQ connected');
-      // Ensure the queue exists
-      channel.assertQueue(queue, options);
+  // Connect to the RabbitMQ server if the RabbitMQ is enabled
+  if (rabbitmqConfig.enabled !== false) {
+    amqp.connect(connectionString, (connectErr, connection: Connection) => {
+      connection.createChannel((channelErr, channel: Channel) => {
+        if (channelErr) {
+          logger.error('Failed to create a channel:', channelErr);
+          return;
+        }
+        logger.info('RabbitMQ connected');
+        // Ensure the queue exists
+        channel.assertQueue(queue, options);
 
-      // Ensure that only one message must be processed at a time by the consumer
-      channel.prefetch(1);
+        // Ensure that only one message must be processed at a time by the consumer
+        channel.prefetch(1);
 
-      logger.info(`Consume messages from the queue ${queue}`);
-      channel.consume(
-        queue,
-        async (msg: amqp.Message | null) => await handleMessage(db, axelarClient, channel, msg),
-        { noAck: false }
-      );
+        logger.info(`Consume messages from the queue ${queue}`);
+        channel.consume(
+          queue,
+          async (msg: amqp.Message | null) => await handleMessage(db, axelarClient, channel, msg),
+          { noAck: false }
+        );
+      });
     });
-  });
+  }
 }

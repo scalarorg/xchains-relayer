@@ -21,30 +21,68 @@ model RelayData {
 }
 
 model CallContractWithToken {
-  id              String    @id @db.VarChar(255)
-  contractAddress String    @db.VarChar(255)
-  amount          String    @db.VarChar(255)
-  symbol          String    @db.VarChar(255)
-  payload         String    @db.Text
-  payloadHash     String    @db.VarChar(255)
-  sourceAddress   String    @db.VarChar(255)
-  createdAt       DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt       DateTime  @default(now()) @db.Timestamp(6)
-  RelayData       RelayData @relation(fields: [id], references: [id])
+  id                    String    @id @db.VarChar(255)
+  blockNumber           Int?      @default(0)
+  contractAddress       String    @db.VarChar(255)
+  amount                String    @db.VarChar(255)
+  symbol                String    @db.VarChar(255)
+  payload               String
+  payloadHash           String    @db.VarChar(255)
+  sourceAddress         String    @db.VarChar(255)
+  createdAt             DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime  @default(now()) @db.Timestamp(6)
+  RelayData             RelayData @relation(fields: [id], references: [id])
 }
 
 model CallContract {
-  id              String    @id @db.VarChar(255)
-  contractAddress String    @db.VarChar(255)
-  payload         String    @db.Text
-  payloadHash     String    @db.VarChar(255)
-  sourceAddress   String    @db.VarChar(255)
-  createdAt       DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt       DateTime  @default(now()) @db.Timestamp(6)
-  RelayData       RelayData @relation(fields: [id], references: [id])
+  id                    String    @id @db.VarChar(255)
+  blockNumber           Int?       @default(0)
+  contractAddress       String    @db.VarChar(255)
+  payload               String
+  payloadHash           String    @db.VarChar(255)
+  sourceAddress         String    @db.VarChar(255)
+  createdAt             DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime  @default(now()) @db.Timestamp(6)
+  callContractApproved  CallContractApproved? 
+  RelayData             RelayData @relation(fields: [id], references: [id])
 }
 
+model CallContractApproved {
+  id                    String    @id @db.VarChar(255)
+  sourceChain           String    @db.VarChar(255) 
+  destinationChain      String    @db.VarChar(255)
+  txHash                String    @db.VarChar(255)
+  blockNumber           Int
+  logIndex              Int     
+  sourceAddress         String    @db.VarChar(255)
+  contractAddress       String    @db.VarChar(255)
+  sourceTxHash          String    @db.VarChar(255)
+  sourceEventIndex      Int
+  payloadHash           String    @db.VarChar(255)
+  commandId             String
+  callContractId        String?   @db.VarChar(255) @unique
+  CallContract          CallContract? @relation(fields: [callContractId], references: [id])
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model CallContractWithTokenApproved {
+  id                    String    @id @db.VarChar(255)
+  sourceChain           String    @db.VarChar(255) 
+  destinationChain      String    @db.VarChar(255)
+  txHash                String    @db.VarChar(255)
+  blockNumber           Int
+  logIndex              Int     
+  sourceAddress         String    @db.VarChar(255)
+  contractAddress       String    @db.VarChar(255)
+  sourceTxHash          String    @db.VarChar(255)
+  sourceEventIndex      BigInt
+  payloadHash           String    @db.VarChar(255)
+  commandId             String
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @default(now()) @db.Timestamp(6)
+}
 model Operatorship {
-  id        Int     @id @default(autoincrement()) // Unique identifier   
-  hash      String       
+  id   Int    @id @default(autoincrement())
+  hash String
 }
