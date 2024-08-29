@@ -25,7 +25,7 @@ export class DatabaseClient {
 
   createCosmosContractCallEvent(event: IBCEvent<ContractCallSubmitted>) {
     console.log('Create Cosmos Contract Call Event with id: ', `${event.args.messageId}`);
-
+  
     return this.prisma.relayData.create({
       data: {
         id: `${event.args.messageId}`,
@@ -81,6 +81,7 @@ export class DatabaseClient {
         to: event.destinationChain,
         callContract: {
           create: {
+            blockNumber: event.blockNumber,
             payload: event.args.payload.toLowerCase(),
             payloadHash: event.args.payloadHash.toLowerCase(),
             contractAddress: event.args.destinationContractAddress.toLowerCase(),
@@ -102,6 +103,7 @@ export class DatabaseClient {
         to: event.destinationChain,
         callContractWithToken: {
           create: {
+            blockNumber: event.blockNumber,
             payload: event.args.payload.toLowerCase(),
             payloadHash: event.args.payloadHash.toLowerCase(),
             contractAddress: event.args.destinationContractAddress.toLowerCase(),
@@ -114,6 +116,49 @@ export class DatabaseClient {
     });
   }
 
+  createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
+    const id = `${event.hash}-${event.args.sourceEventIndex}-${event.logIndex}`;
+    logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${event.hash}"`);
+    this.prisma.callContractApproved.create({
+      data: {
+        id,
+        sourceChain: event.sourceChain,
+        destinationChain: event.destinationChain,
+        txHash: event.hash,
+        blockNumber: event.blockNumber,
+        logIndex: event.logIndex,
+        commandId: event.args.commandId,
+        sourceAddress: event.args.sourceAddress,
+        contractAddress: event.args.contractAddress,
+        payloadHash: event.args.payloadHash,
+        sourceTxHash: event.args.sourceTxHash,
+        sourceEventIndex: Number(event.args.sourceEventIndex.toBigInt())
+      },
+    }).then((result) => logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`))
+      .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
+  }
+
+  createEvmContractCallApprovedWithMintEvent(event: EvmEvent<ContractCallApprovedWithMintEventObject>) {
+    const id = `${event.hash}-${event.logIndex}`;
+    console.log('Create Evm Contract Call Approved With Mint Event with id: ', `${id}`);
+  
+    return this.prisma.callContractWithTokenApproved.create({
+      data: {
+        id,
+        sourceChain: event.sourceChain,
+        destinationChain: event.destinationChain,
+        txHash: event.hash,
+        blockNumber: event.blockNumber,
+        logIndex: event.logIndex,
+        commandId: event.args.commandId,
+        sourceAddress: event.args.sourceAddress,
+        contractAddress: event.args.contractAddress,
+        payloadHash: event.args.payloadHash,
+        sourceTxHash: event.args.sourceTxHash,
+        sourceEventIndex: event.args.sourceEventIndex.toBigInt()
+      },
+    });
+  }
   createBtcCallContractEvent(event: BtcEventTransaction) {
     const id = `${event.txHash}-${event.logIndex}`;
     console.log('Create BTC Call Contract Event with id: ', id);
@@ -122,19 +167,20 @@ export class DatabaseClient {
         id,
         from: event.sourceChain,
         to: event.destinationChain,
-        callContract: {
+        callContractWithToken: {
           create: {
             payload: event.payload.toLowerCase(),
             payloadHash: event.payloadHash.toLowerCase(),
             contractAddress: event.destinationContractAddress.toLowerCase(),
             sourceAddress: event.sender.toLowerCase(),
-            destinationAddress: event.args.chain_id_smart_contract_address.toLowerCase(),
+            amount: event.args.amount_minting,
+            symbol: "",
           },
         },
       },
     });
   }
-
+  //Todo: 20240829: Redesign function check operator ship for bitcoin
   async createOperatorEpoch(params: string) {
     const [newOperators, newWeights, newThreshold] = ethers.utils.defaultAbiCoder.decode(
       ['address[]', 'uint256[]', 'uint256'],
@@ -370,7 +416,7 @@ export class DatabaseClient {
     logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
   }
 
-  async getBurningTx(payloadHash: string[]) : Promise<string> {
+  async getBurningTx(payloadHash: string[]): Promise<string> {
     const burningTx = await this.prisma.callContract.findFirst({
       where: {
         payloadHash: {

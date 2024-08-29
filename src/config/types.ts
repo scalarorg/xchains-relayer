@@ -36,5 +36,6 @@ export interface RabbitMQConfig {
   queueType: string;
   routingKey: string;
   sourceChain: string;
+  enabled?: boolean;
   stopHeight?: number;
 }

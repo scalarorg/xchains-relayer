@@ -30,7 +30,7 @@ export class EvmClient {
     this.gateway = IAxelarGateway__factory.connect(chain.gateway, this.wallet);
     this.maxRetry = _maxRetry;
     this.retryDelay = _retryDelay;
-    this.chainId = chain.id;
+    this.chainId = chain.name;
     this.finalityBlocks = chain.finality;
   }
 

@@ -1,7 +1,5 @@
-import * as bitcoin from 'bitcoinjs-lib';
-import { Network, Psbt } from 'bitcoinjs-lib';
+import { Network, Psbt, networks } from 'bitcoinjs-lib';
 import {ECPairFactory, ECPairAPI, TinySecp256k1Interface } from 'ecpair';
-import * as crypto from 'crypto';
 
 // You need to provide the ECC library. The ECC library must implement 
 // all the methods of the `TinySecp256k1Interface` interface.
@@ -35,23 +33,23 @@ export enum AddressType {
 }
 export function getAddressType(address: string): [AddressType, Network] {
   if (address.startsWith('bc1q')) {
-    return [AddressType.P2WPKH, bitcoin.networks.bitcoin];
+    return [AddressType.P2WPKH, networks.bitcoin];
   } else if (address.startsWith('bc1p')) {
-    return [AddressType.P2TR, bitcoin.networks.bitcoin];
+    return [AddressType.P2TR, networks.bitcoin];
   } else if (address.startsWith('1')) {
-    return [AddressType.P2PKH, bitcoin.networks.bitcoin];
+    return [AddressType.P2PKH, networks.bitcoin];
   } else if (address.startsWith('3')) {
-    return [AddressType.P2SH_P2WPKH, bitcoin.networks.bitcoin];
+    return [AddressType.P2SH_P2WPKH, networks.bitcoin];
   }
   // testnet
   else if (address.startsWith('tb1q')) {
-    return [AddressType.P2WPKH, bitcoin.networks.testnet];
+    return [AddressType.P2WPKH, networks.testnet];
   } else if (address.startsWith('m') || address.startsWith('n')) {
-    return [AddressType.P2PKH, bitcoin.networks.testnet];
+    return [AddressType.P2PKH, networks.testnet];
   } else if (address.startsWith('2')) {
-    return [AddressType.P2SH_P2WPKH, bitcoin.networks.testnet];
+    return [AddressType.P2SH_P2WPKH, networks.testnet];
   } else if (address.startsWith('tb1p')) {
-    return [AddressType.P2TR, bitcoin.networks.testnet];
+    return [AddressType.P2TR, networks.testnet];
   }
   throw new Error(`Unknown address: ${address}`);
 }

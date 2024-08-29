@@ -58,7 +58,7 @@ export class Parser {
   };
 
   parseContractCallApprovedEvent = async (event: any): Promise<IBCEvent<ContractCallSubmitted>> => {
-    console.log('[axelar.evm.v1beta1.ContractCallApproved] event data: ', event);
+    console.log('parseContractCallApprovedEvent [axelar.evm.v1beta1.ContractCallApproved]');
     const key = 'axelar.evm.v1beta1.ContractCallApproved';
 
     const eventId = removeQuote(event[`${key}.event_id`][0]);
@@ -70,7 +70,7 @@ export class Parser {
     const payload = await this.db.findRelayDataById(eventId).then((data) => {
       return data?.callContract?.payload || data?.callContractWithToken?.payload;
     });
-
+    
     if (!payload) throw new Error(errorMsg);
 
     const data = {

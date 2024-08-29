@@ -1,8 +1,8 @@
 [
     {
         "network": "testnet",
-        "chainId": "wbitcoin",
-        "type": "fullnode",
+        "chainId": "bitcoin-testnet",
+        "type": "braodcast",
         "host": "localhost",
         "port": 18332,
         "user": "user",
@@ -10,12 +10,12 @@
     },
     {
         "network": "testnet",
-        "chainId": "wbitcoin",
+        "chainId": "bitcoin-testnet",
         "type": "signer",
         "host": "localhost",
         "port": 18332,
         "user": "user",
         "password": "password",
-        "address" : "tb1qe48m5hvvhp9e4q4eh2u0kx4x0jxx3q9n70del5"
+        "address": "tb1qe48m5hvvhp9e4q4eh2u0kx4x0jxx3q9n70del5"
     }
 ]

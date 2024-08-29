@@ -145,7 +145,7 @@ export async function handleCosmosApprovedEvent<T extends ContractCallSubmitted 
     const tx = await handleCosmosToEvmApprovedEvent(vxClient, evmClient, event);
     await db.updateCosmosToEvmEvent(event, tx);
     return
-  } 
+  }
   let btcBroadcastClient, btcSignerClient;
   for (const btcClient of btcClients) {
     if (btcClient.config.chainId.toLowerCase() === chainId) {
@@ -228,10 +228,10 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
   relayDatas: { id: string; payload: string | undefined }[]
 ) {
   const { commandId, contractAddress, sourceAddress, sourceChain, payloadHash } = event.args;
-
+  
   if (!relayDatas || relayDatas.length === 0) {
     logger.info(
-      `[handleCosmosToEvmCallContractCompleteEvent]: Cannot find payload from given payloadHash: ${payloadHash}`
+      `[handleCosmosToEvmCallContractCompleteEvent]: Cannot find payload from given payloadHash: ${payloadHash}; commandId: ${commandId}`
     );
     return undefined;
   }
@@ -376,10 +376,13 @@ export async function handleEvmToCosmosCompleteEvent(client: AxelarClient, event
 
 export async function prepareHandler(event: any, db: DatabaseClient, label = '') {
   // reconnect prisma db
-  await db.connect();
-
-  // log event
-  logger.info(`[${label}] EventReceived ${JSON.stringify(event)}`);
+  try {
+    await db.connect();
+     // log event
+    logger.info(`[${label}] EventReceived ${JSON.stringify(event)}`);
+  } catch (e) {
+    logger.error(`[${label}] Failed to connect to the database: ${e}`);
+  }
 }
 
 const getPacketSequenceFromExecuteTx = (executeTx: any) => {
