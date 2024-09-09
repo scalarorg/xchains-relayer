@@ -167,9 +167,10 @@ export class DatabaseClient {
         id,
         from: event.sourceChain,
         to: event.destinationChain,
-        callContractWithToken: {
+        callContract: {
           create: {
-            payload: event.payload.toLowerCase(),
+            blockNumber: event.blockNumber,
+            payload: event.payload.toLowerCase(),            
             payloadHash: event.payloadHash.toLowerCase(),
             contractAddress: event.destinationContractAddress.toLowerCase(),
             sourceAddress: event.sender.toLowerCase(),

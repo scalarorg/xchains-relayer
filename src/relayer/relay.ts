@@ -1,6 +1,6 @@
 import { Subject, mergeMap } from 'rxjs';
 import { AxelarClient, EvmClient, DatabaseClient, BtcClient } from '../clients';
-import { axelarChain, cosmosChains, evmChains, btcChains, env } from '../config';
+import { axelarChain, cosmosChains, evmChains, btcChains, rabbitmqConfigs, env } from '../config';
 import { logger } from '../logger';
 import {
   ContractCallSubmitted,
@@ -235,10 +235,12 @@ export async function startRelayer() {
     logger.error(`Failed to listen to events for Axelar network: ${e}`);
   }
   // Listening rabbitmq events
-  try {
-    logger.info('Starting rabbitmq relayer...');
-    startRabbitMQRelayer(db, axelarClient);
-  } catch (e) {
-    logger.error(`Failed to listen to events for rabbitmq: ${e}`);
+  for (const rabbitmq of rabbitmqConfigs) {
+    try {
+      logger.info('Starting rabbitmq relayer...');
+      startRabbitMQRelayer(rabbitmq, db, axelarClient);
+    } catch (e) {
+      logger.error(`Failed to listen to events for rabbitmq: ${e}`);
+    }
   }
 }

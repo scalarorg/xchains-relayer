@@ -1,5 +1,6 @@
 [
   {
+    "chainId": "1337",
     "id": "ganache-0",
     "name": "ganache-0",
     "rpcUrl": "http://a5c6803b39cd942c3b9daee2847e24fa-1977123350.us-east-2.elb.amazonaws.com:7545",
@@ -7,6 +8,7 @@
     "finality": 1
   },
   {
+    "chainId": "5",
     "id": "goerli",
     "name": "goerli",
     "rpcUrl": "https://rpc.ankr.com/eth_goerli",
@@ -14,6 +16,7 @@
     "finality": 1
   },
   {
+    "chainId": "43113",
     "id": "avalanche",
     "name": "avalanche",
     "rpcUrl": "https://rpc.ankr.com/avalanche_fuji",

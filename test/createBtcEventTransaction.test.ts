@@ -28,7 +28,7 @@ module.exports = () => {
         logIndex: 0,
         blockNumber: 0,
         sender: '0x130c4810d57140e1e62967cbf742caeae91b6ece',
-        sourceChain: 'Wbitcoin',
+        sourceChain: 'bitcoin',
         destinationChain: 'ethereum-sepolia',
         destinationContractAddress: '0x768e8de8cf0c7747d41f75f83c914a19c5921cf3',
         payload:

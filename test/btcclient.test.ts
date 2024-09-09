@@ -10,7 +10,7 @@ module.exports = async () => {
       const btcClients = btcChains.map((btc) => new BtcClient(btc));
       let btcBroadcastClient, btcSignerClient;
       for (const btcClient of btcClients) {
-        if (btcClient.config.chainId.toLowerCase() === 'wbitcoin') {
+        if (btcClient.config.chainId.toLowerCase() === 'bitcoin') {
           if (btcClient.isSigner()) {
             btcSignerClient = btcClient;
           } else if (btcClient.isBroadcast()) {

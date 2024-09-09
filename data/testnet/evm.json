@@ -1,34 +1,39 @@
 [
     {
-        "id": "421614",
+        "chainId": "421614",
+        "id": "arbitrum",
         "name": "arbitrum-sepolia",
         "rpcUrl": "https://endpoints.omniatech.io/v1/arbitrum/sepolia/public",
         "gateway": "0xe1cE95479C84e9809269227C7F8524aE051Ae77a",
         "finality": 1
     },
     {
-        "id": "11155111",
+        "chainId": "11155111",
+        "id": "ethereum-sepolia",
         "name": "ethereum-sepolia",
         "rpcUrl": "https://rpc.sepolia.org",
         "gateway": "0xe432150cce91c13a887f7D836923d5597adD8E31",
         "finality": 1
     },
     {
-        "id": "84532",
+        "chainId": "84532",
+        "id": "base-sepolia",
         "name": "base-sepolia",
         "rpcUrl": "https://base-sepolia.blockpi.network/v1/rpc/public",
         "gateway": "0xe432150cce91c13a887f7D836923d5597adD8E31",
         "finality": 1
     },
     {
-        "id": "43113",
+        "chainId": "43113",
+        "id": "Avalanche",
         "name": "Avalanche",
         "rpcUrl": "https://rpc.ankr.com/avalanche_fuji",
         "finality": 1,
         "gateway": "0xC249632c2D40b9001FE907806902f63038B737Ab"
     },
     {
-        "id": "97",
+        "chainId": "97",
+        "id": "Binance",
         "name": "Binance",
         "finality": 16,
         "rpcUrl": "https://data-seed-prebsc-1-s2.binance.org:8545",

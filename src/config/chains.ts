@@ -36,4 +36,4 @@ export const btcChains: BtcNetworkConfig[] = btc.map((chain) => ({
   privateKey: env.BTC_PRIVATE_KEY,
 }));
 
-export const rabbitmqConfig: RabbitMQConfig = rabbitmq;
+export const rabbitmqConfigs: RabbitMQConfig[] = rabbitmq;

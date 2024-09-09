@@ -14,7 +14,7 @@ export async function mockHandleRabbitmqMsg(db: DatabaseClient, axelarClient: Ax
         staking_value: 10000,
         staking_start_height: 2500000,
         staking_start_timestamp: 1630000000,
-        chain_id: "Wbitcoin",
+        chain_id: "bitcoin",
         chain_id_user_address: "130C4810D57140e1E62967cBF742CaEaE91b6ecE",              // base64 Encode User address on the destination chain for receiving the minted tokens
         chain_id_smart_contract_address: "768E8De8cf0c7747D41f75F83C914a19C5921Cf3",     // Smnart contract address on the destination chain for handling minting logic
         amount_minting: "10000",
@@ -25,7 +25,7 @@ export async function mockHandleRabbitmqMsg(db: DatabaseClient, axelarClient: Ax
         logIndex: 0,
         blockNumber: 2500000,
         sender: "0x130C4810D57140e1E62967cBF742CaEaE91b6ecE",
-        sourceChain: "Wbitcoin",
+        sourceChain: "bitcoin",
         destinationChain: "ethereum-sepolia",
         destinationContractAddress: "0x768E8De8cf0c7747D41f75F83C914a19C5921Cf3",
         //mintingAmount: string;
