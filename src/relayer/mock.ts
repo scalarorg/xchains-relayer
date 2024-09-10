@@ -24,6 +24,7 @@ export async function mockHandleRabbitmqMsg(db: DatabaseClient, axelarClient: Ax
         txHash: "0x04936b1d1304e2d2b5cb841126b13507eeb36a3482fff9a6f16571062e00a3cd",
         logIndex: 0,
         blockNumber: 2500000,
+        mintingAmount: "10000",
         sender: "0x130C4810D57140e1E62967cBF742CaEaE91b6ecE",
         sourceChain: "bitcoin",
         destinationChain: "ethereum-sepolia",

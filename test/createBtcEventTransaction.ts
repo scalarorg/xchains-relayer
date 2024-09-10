@@ -1,7 +1,7 @@
 import { createBtcEventTransaction } from '../src/relayer/rabbitmq';
 import { BtcEventTransaction, BtcTransaction } from '../src/types';
 
-const chai = require('chai');
+import chai from 'chai';
 const expect = chai.expect;
 
 module.exports = () => {
@@ -27,6 +27,7 @@ module.exports = () => {
         txHash: '0x2eae89bb0fdfae57970102ba94e7751cbb28d04029cc203509d99a180b8ae1ef',
         logIndex: 0,
         blockNumber: 0,
+        mintingAmount: "10000",
         sender: '0x130c4810d57140e1e62967cbf742caeae91b6ece',
         sourceChain: 'bitcoin',
         destinationChain: 'ethereum-sepolia',
@@ -37,7 +38,7 @@ module.exports = () => {
         args: btcTransaction,
       };
 
-      const result = createBtcEventTransaction(btcTransaction);
+      const result = createBtcEventTransaction("bitcoin", btcTransaction);
 
       expect(result).to.deep.equal(expectedBtcEventTransaction);
     });

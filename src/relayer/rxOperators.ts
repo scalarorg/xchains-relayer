@@ -40,3 +40,21 @@ export function mapEventToEvmClient(
     event,
   });
 }
+
+export function mapChainNameToEvmClient(
+  chainName: string,
+  evmClients: EvmClient[]
+) {
+  // Find the evm client associated with event's destination chain
+  const evmClient = evmClients.find(
+    (client) => client.chainId.toLowerCase() === chainName.toLowerCase()
+  );
+
+  // If no evm client found, return
+  if (!evmClient)
+    return throwError(
+      () => `No evm client found for event's destination chain ${chainName}`
+    );
+
+  return evmClient;
+}

@@ -174,7 +174,7 @@ export class DatabaseClient {
             payloadHash: event.payloadHash.toLowerCase(),
             contractAddress: event.destinationContractAddress.toLowerCase(),
             sourceAddress: event.sender.toLowerCase(),
-            amount: event.args.amount_minting,
+            amount: event.mintingAmount,
             symbol: "",
           },
         },
@@ -402,7 +402,29 @@ export class DatabaseClient {
     });
     logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
   }
-
+  async updateEventExecuted(commandId: string) {
+    const status = Status.SUCCESS;
+    const callContractApproved = await this.prisma.callContractApproved.findFirst({
+      where: {
+        commandId,
+      },
+    });
+    if (callContractApproved) {
+      const executeDb = await this.prisma.callContractApproved.update({
+        where: {
+          id: callContractApproved.id,
+        },
+        data: {
+          status,
+          updatedAt: new Date(),
+        },
+      });
+      logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
+    } else {
+      logger.error(`[DBUpdate] Cannot find callContractApproved with commandId: ${commandId}`);
+    }
+    
+  }
   async updateEventStatusWithPacketSequence(id: string, status: Status, sequence?: number) {
     const executeDb = await this.prisma.relayData.update({
       where: {

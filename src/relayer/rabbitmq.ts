@@ -5,6 +5,13 @@ import amqp, { Connection, Channel } from 'amqplib/callback_api';
 import { BtcEventTransaction, BtcTransaction } from '../types';
 import { ethers } from 'ethers';
 
+function base64ToHex(base64Value: string): string {
+  return `0x${Buffer.from(base64Value, 'base64').toString('hex')}`;
+}
+function base64ToDecimal(base64Value: string): string {
+  const hex = base64ToHex(base64Value);
+  return String(Number(hex));
+}
 export function getChainNameById(chainId: string): string | undefined{
   for (const chain of evmChains) {
     if (chain.chainId === chainId) {
@@ -17,20 +24,19 @@ export function getChainNameById(chainId: string): string | undefined{
  * @param btcTransaction: BtcTransaction
  * @returns BtcEventTransaction
  */
-export function createBtcEventTransaction(rabbitmqConfig: RabbitMQConfig, btcTransaction: BtcTransaction): BtcEventTransaction {
-  logger.info(`[createBtcEventTransaction] txHash: ${btcTransaction.vault_tx_hash_hex}`);
-  const toAddress = `0x${Buffer.from(btcTransaction.chain_id_user_address, 'base64').toString(
-    'hex'
-  )}`;
-  logger.info(`[createBtcEventTransaction] amount_minting: ${btcTransaction.amount_minting}`);
-  const amount_decode = `0x${Buffer.from(btcTransaction.amount_minting, 'base64').toString('hex')}`;
-  const amount = ethers.utils.parseUnits(String(Number(amount_decode)), 0);
-
-   logger.info(`[createBtcEventTransaction] toAddress: ${toAddress}, amount : ${amount}`);
+export function createBtcEventTransaction(sourceChain: string, btcTransaction: BtcTransaction): BtcEventTransaction {
+  logger.info(`[createBtcEventTransaction] 
+      txHash: ${btcTransaction.vault_tx_hash_hex},
+      user_address: ${btcTransaction.chain_id_user_address},
+      amount_minting: ${btcTransaction.amount_minting}
+      chain_id: ${btcTransaction.chain_id}`);
+  const toAddress = base64ToHex(btcTransaction.chain_id_user_address);
+  const amount_decode = base64ToDecimal(btcTransaction.amount_minting);
+  const chainId = base64ToDecimal(btcTransaction.chain_id);
+  const amount = ethers.utils.parseUnits(amount_decode, 0);
+  logger.info(`[createBtcEventTransaction] decoded: user_address: ${toAddress}, amount : ${amount}, chain_id: ${chainId}`);
   const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
-
   const payloadHash = ethers.utils.keccak256(payload);
-  const chainId = Buffer.from(btcTransaction.chain_id, 'base64').toString('hex');
   const destinationChain = getChainNameById(chainId);
   if (destinationChain === undefined) {
     throw new Error(`[createBtcEventTransaction] destination chain not found: ${chainId}`);
@@ -39,13 +45,11 @@ export function createBtcEventTransaction(rabbitmqConfig: RabbitMQConfig, btcTra
     txHash: `0x${btcTransaction.vault_tx_hash_hex}`,
     logIndex: 0,
     blockNumber: 0,
-    sender: `0x${Buffer.from(btcTransaction.chain_id_user_address, 'base64').toString('hex')}`,
-    sourceChain: rabbitmqConfig.sourceChain,
+    mintingAmount: Number(amount).toString(),
+    sender: base64ToHex(btcTransaction.chain_id_user_address),
+    sourceChain,
     destinationChain,
-    destinationContractAddress: `0x${Buffer.from(
-      btcTransaction.chain_id_smart_contract_address,
-      'base64'
-    ).toString('hex')}`,
+    destinationContractAddress: base64ToHex(btcTransaction.chain_id_smart_contract_address),
     payload,
     payloadHash,
     args: btcTransaction,
@@ -79,7 +83,7 @@ export async function handleMessage(
         return;
       }
       //0. Create event object
-      const btcEvent: BtcEventTransaction = createBtcEventTransaction(rabbitmqConfig, btcTransaction);
+      const btcEvent: BtcEventTransaction = createBtcEventTransaction(rabbitmqConfig.sourceChain, btcTransaction);
       try {
         // 1. Connect to the database
         await db.connect();
