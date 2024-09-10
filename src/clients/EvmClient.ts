@@ -42,11 +42,14 @@ export class EvmClient {
     return this.wallet.provider.waitForTransaction(txHash, this.finalityBlocks);
   }
 
-  public gatewayExecute(executeData: string) {
-    return this.submitTx({
+  public async gatewayExecute(executeData: string) {
+    const tx = {
       to: this.gateway.address,
       data: executeData,
-    }).catch((e: any) => {
+      gasLimit: env.GAS_LIMIT,
+    }
+    logger.debug(`[EvmClient.gatewayExecute] tx: ${tx}`);
+    return this.submitTx(tx).catch((e: any) => {
       logger.error(`[EvmClient.gatewayExecute] Failed ${e.message}`);
       return undefined;
     });
@@ -162,6 +165,7 @@ export class EvmClient {
         logger.error(
           `[EvmClient.submitTx] Failed ${e.error.reason} to: ${tx.to} data: ${tx.data}`
         );
+        logger.error(e.error);
         await sleep(this.retryDelay);
         logger.debug(`Retrying tx: ${retryAttempt + 1}`);
         return this.submitTx(tx, retryAttempt + 1);

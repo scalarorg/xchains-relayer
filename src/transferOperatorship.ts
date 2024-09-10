@@ -43,7 +43,7 @@ export async function transferOperatorship(dbClient: DatabaseClient): Promise<vo
 }
 
 async function readOperatorsInfo(): Promise<[string[], number[], number]> {
-  const keyId = 'wbitcoin';
+  const keyId = 'bitcoin';
   const node = 'tcp://scalarnode1:26657';
   try {
     const output = await runAxelardCommand(keyId, node);

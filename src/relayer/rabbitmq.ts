@@ -1,60 +1,55 @@
 import { AxelarClient, DatabaseClient } from '../clients';
-import { rabbitmqConfig } from '../config';
+import { evmChains, RabbitMQConfig } from '../config';
 import { logger } from '../logger';
 import amqp, { Connection, Channel } from 'amqplib/callback_api';
 import { BtcEventTransaction, BtcTransaction } from '../types';
 import { ethers } from 'ethers';
 
-const connectionString = `amqp://${rabbitmqConfig.user}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}`;
-const queue = rabbitmqConfig.queue;
-const options = {
-  durable: true,
-  arguments: {
-    'x-queue-type': rabbitmqConfig.queueType || 'quorum',
-    'x-dead-letter-exchange': 'common_dlx',
-    'x-dead-letter-routing-key': rabbitmqConfig.routingKey || 'active_vault_queue_routing_key',
-  },
-};
+function base64ToHex(base64Value: string): string {
+  return `0x${Buffer.from(base64Value, 'base64').toString('hex')}`;
+}
+function base64ToDecimal(base64Value: string): string {
+  const hex = base64ToHex(base64Value);
+  return String(Number(hex));
+}
+export function getChainNameById(chainId: string): string | undefined{
+  for (const chain of evmChains) {
+    if (chain.chainId === chainId) {
+      return chain.name;
+    }
+  }
+}
 /*
  * Create a BtcEventTransaction object from a BtcTransaction object
  * @param btcTransaction: BtcTransaction
  * @returns BtcEventTransaction
  */
-export function createBtcEventTransaction(btcTransaction: BtcTransaction): BtcEventTransaction {
-  logger.info(`[createBtcEventTransaction] txHash: ${btcTransaction.vault_tx_hash_hex}`);
-  const toAddress = `0x${Buffer.from(btcTransaction.chain_id_user_address, 'base64').toString(
-    'hex'
-  )}`;
-  logger.info(`[createBtcEventTransaction] amount_minting: ${btcTransaction.amount_minting}`);
-  const amount_decode = `0x${Buffer.from(btcTransaction.amount_minting, 'base64').toString('hex')}`;
-  const amount = ethers.utils.parseUnits(String(Number(amount_decode)), 0);
-
-   logger.info(`[createBtcEventTransaction] toAddress: ${toAddress}, amount : ${amount}`);
+export function createBtcEventTransaction(sourceChain: string, btcTransaction: BtcTransaction): BtcEventTransaction {
+  logger.info(`[createBtcEventTransaction] 
+      txHash: ${btcTransaction.vault_tx_hash_hex},
+      user_address: ${btcTransaction.chain_id_user_address},
+      amount_minting: ${btcTransaction.amount_minting}
+      chain_id: ${btcTransaction.chain_id}`);
+  const toAddress = base64ToHex(btcTransaction.chain_id_user_address);
+  const amount_decode = base64ToDecimal(btcTransaction.amount_minting);
+  const chainId = base64ToDecimal(btcTransaction.chain_id);
+  const amount = ethers.utils.parseUnits(amount_decode, 0);
+  logger.info(`[createBtcEventTransaction] decoded: user_address: ${toAddress}, amount : ${amount}, chain_id: ${chainId}`);
   const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
-
   const payloadHash = ethers.utils.keccak256(payload);
-
-  let destinationChain;
-  switch (String(Number(Buffer.from(btcTransaction.chain_id, 'base64').toString('hex')))) {
-    case '11155111':
-      destinationChain = 'ethereum-sepolia';
-      break;
-    default:
-      destinationChain = 'ethereum-sepolia';
-      break;
+  const destinationChain = getChainNameById(chainId);
+  if (destinationChain === undefined) {
+    throw new Error(`[createBtcEventTransaction] destination chain not found: ${chainId}`);
   }
-
   const btcEvent: BtcEventTransaction = {
     txHash: `0x${btcTransaction.vault_tx_hash_hex}`,
     logIndex: 0,
     blockNumber: 0,
-    sender: `0x${Buffer.from(btcTransaction.chain_id_user_address, 'base64').toString('hex')}`,
-    sourceChain: rabbitmqConfig.sourceChain,
+    mintingAmount: Number(amount).toString(),
+    sender: base64ToHex(btcTransaction.chain_id_user_address),
+    sourceChain,
     destinationChain,
-    destinationContractAddress: `0x${Buffer.from(
-      btcTransaction.chain_id_smart_contract_address,
-      'base64'
-    ).toString('hex')}`,
+    destinationContractAddress: base64ToHex(btcTransaction.chain_id_smart_contract_address),
     payload,
     payloadHash,
     args: btcTransaction,
@@ -70,6 +65,7 @@ export function createBtcEventTransaction(btcTransaction: BtcTransaction): BtcEv
  * @param msg: amqp.Message | null
  */
 export async function handleMessage(
+  rabbitmqConfig: RabbitMQConfig,
   db: DatabaseClient,
   axelarClient: AxelarClient,
   channel: amqp.Channel,
@@ -87,7 +83,7 @@ export async function handleMessage(
         return;
       }
       //0. Create event object
-      const btcEvent: BtcEventTransaction = createBtcEventTransaction(btcTransaction);
+      const btcEvent: BtcEventTransaction = createBtcEventTransaction(rabbitmqConfig.sourceChain, btcTransaction);
       try {
         // 1. Connect to the database
         await db.connect();
@@ -128,10 +124,20 @@ export async function handleBtcEvent(
     channel.nack(msg, false, false);
   }
 }
-export async function startRabbitMQRelayer(db: DatabaseClient, axelarClient: AxelarClient) {
+export async function startRabbitMQRelayer(rabbitmqConfig: RabbitMQConfig, db: DatabaseClient, axelarClient: AxelarClient) {
   // Create a connection and a channel
   // Connect to the RabbitMQ server if the RabbitMQ is enabled
   if (rabbitmqConfig.enabled !== false) {
+    const connectionString = `amqp://${rabbitmqConfig.user}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}`;
+    const queue = rabbitmqConfig.queue;
+    const options = {
+      durable: true,
+      arguments: {
+        'x-queue-type': rabbitmqConfig.queueType || 'quorum',
+        'x-dead-letter-exchange': 'common_dlx',
+        'x-dead-letter-routing-key': rabbitmqConfig.routingKey || 'active_vault_queue_routing_key',
+      },
+    };
     amqp.connect(connectionString, (connectErr, connection: Connection) => {
       connection.createChannel((channelErr, channel: Channel) => {
         if (channelErr) {
@@ -148,7 +154,7 @@ export async function startRabbitMQRelayer(db: DatabaseClient, axelarClient: Axe
         logger.info(`Consume messages from the queue ${queue}`);
         channel.consume(
           queue,
-          async (msg: amqp.Message | null) => await handleMessage(db, axelarClient, channel, msg),
+          async (msg: amqp.Message | null) => await handleMessage(rabbitmqConfig, db, axelarClient, channel, msg),
           { noAck: false }
         );
       });

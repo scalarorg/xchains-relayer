@@ -6,7 +6,7 @@ export interface BtcEventTransaction {
     sourceChain: string;
     destinationChain: string;
     destinationContractAddress: string;
-    //mintingAmount: string;
+    mintingAmount: string;
     payload: string;
     payloadHash: string;
     args: BtcTransaction;

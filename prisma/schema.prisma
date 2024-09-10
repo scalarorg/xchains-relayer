@@ -36,8 +36,10 @@ model CallContractWithToken {
 
 model CallContract {
   id                    String    @id @db.VarChar(255)
-  blockNumber           Int?       @default(0)
+  blockNumber           Int?      @default(0)
   contractAddress       String    @db.VarChar(255)
+  amount                String?    @db.VarChar(255)
+  symbol                String?    @db.VarChar(255)
   payload               String
   payloadHash           String    @db.VarChar(255)
   sourceAddress         String    @db.VarChar(255)
@@ -60,6 +62,7 @@ model CallContractApproved {
   sourceEventIndex      Int
   payloadHash           String    @db.VarChar(255)
   commandId             String
+  status                Int       @default(0)
   callContractId        String?   @db.VarChar(255) @unique
   CallContract          CallContract? @relation(fields: [callContractId], references: [id])
   createdAt       DateTime  @default(now()) @db.Timestamp(6)
@@ -79,6 +82,7 @@ model CallContractWithTokenApproved {
   sourceEventIndex      BigInt
   payloadHash           String    @db.VarChar(255)
   commandId             String
+  status                Int       @default(0)
   createdAt       DateTime  @default(now()) @db.Timestamp(6)
   updatedAt       DateTime  @default(now()) @db.Timestamp(6)
 }

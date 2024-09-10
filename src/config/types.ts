@@ -9,6 +9,7 @@ export interface CosmosNetworkConfig {
 }
 
 export interface EvmNetworkConfig {
+  chainId: string;    // chain id in number, parsed from btcTransaction.chain_id
   id: string;
   name: string,
   rpcUrl: string,

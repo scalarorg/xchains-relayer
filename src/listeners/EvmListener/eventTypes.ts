@@ -10,6 +10,8 @@ import {
   ContractCallEventObject,
   ContractCallWithTokenEvent,
   ContractCallWithTokenEventObject,
+  ExecutedEvent,
+  ExecutedEventObject,
 } from '../../types/contracts/IAxelarGateway';
 import { parseAnyEvent } from './parser';
 import { TypedEvent, TypedEventFilter } from '../../types/contracts/common';
@@ -73,5 +75,18 @@ export const EvmContractCallWithTokenApprovedEvent: EvmListenerEvent<
     ](),
   isAcceptedChain: (allowedSrcChainIds, event) =>
     allowedSrcChainIds.includes(event.sourceChain.toLowerCase()),
+  parseEvent: parseAnyEvent,
+};
+
+export const EvmExecutedEvent: EvmListenerEvent<
+  ExecutedEventObject,
+  ExecutedEvent
+> = {
+  name: 'Executed',
+  getEventFilter: (gateway: IAxelarGateway) =>
+    gateway.filters[
+      'Executed(bytes32)'
+    ](),
+  isAcceptedChain: () =>  true,
   parseEvent: parseAnyEvent,
 };

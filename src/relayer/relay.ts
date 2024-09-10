@@ -1,6 +1,6 @@
-import { Subject, mergeMap } from 'rxjs';
+import { Subject, mergeMap,  throwError, of } from 'rxjs';
 import { AxelarClient, EvmClient, DatabaseClient, BtcClient } from '../clients';
-import { axelarChain, cosmosChains, evmChains, btcChains, env } from '../config';
+import { axelarChain, cosmosChains, evmChains, btcChains, rabbitmqConfigs, env } from '../config';
 import { logger } from '../logger';
 import {
   ContractCallSubmitted,
@@ -21,12 +21,14 @@ import {
   EvmContractCallWithTokenEvent,
   EvmListener,
   AxelarListener,
+  EvmExecutedEvent,
 } from '../listeners';
 import {
   ContractCallEventObject,
   ContractCallApprovedEventObject,
   ContractCallWithTokenEventObject,
   ContractCallApprovedWithMintEventObject,
+  ExecutedEventObject,
 } from '../types/contracts/IAxelarGateway';
 import {
   handleAnyError,
@@ -42,12 +44,14 @@ import {
 import { createCosmosEventSubject, createEvmEventSubject } from './subject';
 import { filterCosmosDestination, mapEventToEvmClient } from './rxOperators';
 import { startRabbitMQRelayer } from './rabbitmq';
+
 // import { transferOperatorship } from '../transferOperatorship';
 const sEvmCallContract = createEvmEventSubject<ContractCallEventObject>();
 const sEvmCallContractWithToken = createEvmEventSubject<ContractCallWithTokenEventObject>();
 const sEvmApproveContractCallWithToken =
   createEvmEventSubject<ContractCallApprovedWithMintEventObject>();
 const sEvmApproveContractCall = createEvmEventSubject<ContractCallApprovedEventObject>();
+const sEvmExecuted = createEvmEventSubject<ExecutedEventObject>();
 const sCosmosContractCall = createCosmosEventSubject<ContractCallSubmitted>();
 const sCosmosContractApprovedCall = createCosmosEventSubject<ContractCallSubmitted>();
 const sCosmosContractCallWithToken = createCosmosEventSubject<ContractCallWithTokenSubmitted>();
@@ -211,7 +215,32 @@ export async function startRelayer() {
         )
         .catch((e) => handleAnyError(db, 'handleCosmosToEvmCallContractCompleteEvent', e));
     });
+  
+  sEvmExecuted
+    .pipe(mergeMap((event) => { 
+      // Find the evm client associated with event's destination chain
+      const evmClient = evmClients.find(
+        (client) => client.chainId.toLowerCase() === event.destinationChain.toLowerCase()
+      );
 
+      // If no evm client found, return
+      if (!evmClient)
+        return throwError(
+          () => `No evm client found for event's destination chain ${event.destinationChain}`
+        );
+
+      return of({ event, evmClient });
+    }))
+    .subscribe(({ event }) => {
+        prepareHandler(event, db, 'handleEvmExecutedEvent')
+        // Find the array of relay data associated with the event from the database by payload hash
+        .then(() => db.updateEventExecuted(event.args.commandId))
+        // Update the event status in the database
+        .then((results) =>
+          logger.info(`[handleEvmExecutedEvent] Updated event status: ${results}`)
+        )
+        .catch((e) => handleAnyError(db, 'handleEvmExecutedEvent', e));
+     });
   // Listening for evm events
   for (const evmListener of evmListeners) {
     try {
@@ -219,6 +248,7 @@ export async function startRelayer() {
       evmListener.listen(EvmContractCallWithTokenEvent, sEvmCallContractWithToken);
       evmListener.listen(EvmContractCallApprovedEvent, sEvmApproveContractCall);
       evmListener.listen(EvmContractCallWithTokenApprovedEvent, sEvmApproveContractCallWithToken);
+      evmListener.listen(EvmExecutedEvent, sEvmExecuted);
     } catch (e) {
       logger.error(`Failed to listen to events for chain ${evmListener.chainId}: ${e}`);
     }
@@ -235,10 +265,12 @@ export async function startRelayer() {
     logger.error(`Failed to listen to events for Axelar network: ${e}`);
   }
   // Listening rabbitmq events
-  try {
-    logger.info('Starting rabbitmq relayer...');
-    startRabbitMQRelayer(db, axelarClient);
-  } catch (e) {
-    logger.error(`Failed to listen to events for rabbitmq: ${e}`);
+  for (const rabbitmq of rabbitmqConfigs) {
+    try {
+      logger.info('Starting rabbitmq relayer...');
+      startRabbitMQRelayer(rabbitmq, db, axelarClient);
+    } catch (e) {
+      logger.error(`Failed to listen to events for rabbitmq: ${e}`);
+    }
   }
 }
