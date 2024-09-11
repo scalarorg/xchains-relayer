@@ -12,6 +12,11 @@ function base64ToDecimal(base64Value: string): string {
   const hex = base64ToHex(base64Value);
   return String(Number(hex));
 }
+/*
+ * Get the chain name by chain id
+ * @param chainId: string ex. 11155111
+ * @returns string | undefined
+ */
 export function getChainNameById(chainId: string): string | undefined{
   for (const chain of evmChains) {
     if (chain.chainId === chainId) {
@@ -41,6 +46,9 @@ export function createBtcEventTransaction(sourceChain: string, btcTransaction: B
   if (destinationChain === undefined) {
     throw new Error(`[createBtcEventTransaction] destination chain not found: ${chainId}`);
   }
+  logger.info(`[createBtcEventTransaction] 
+      sourceChain: ${base64ToHex(btcTransaction.chain_id_user_address)}, 
+      destinationChain: ${destinationChain}`);
   const btcEvent: BtcEventTransaction = {
     txHash: `0x${btcTransaction.vault_tx_hash_hex}`,
     logIndex: 0,
@@ -114,7 +122,7 @@ export async function handleBtcEvent(
   content: BtcEventTransaction,
   msg: amqp.Message
 ) {
-  logger.info(`[handleScalarRabbitmqEvent] txHash: ${content.txHash}`);
+  logger.info(`[handleScalarRabbitmqEvent] sourceChain ${content.sourceChain}, txHash: ${content.txHash}`);
   const confirmTx = await axelarClient.confirmEvmTx(content.sourceChain, content.txHash);
   if (confirmTx) {
     logger.info(`[handleScalarRabbitmqEvent] Confirmed: ${'0x' + confirmTx.transactionHash}`);
