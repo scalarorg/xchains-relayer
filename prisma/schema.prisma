@@ -62,7 +62,6 @@ model CallContractApproved {
   sourceEventIndex      Int
   payloadHash           String    @db.VarChar(255)
   commandId             String
-  status                Int       @default(0)
   callContractId        String?   @db.VarChar(255) @unique
   CallContract          CallContract? @relation(fields: [callContractId], references: [id])
   createdAt       DateTime  @default(now()) @db.Timestamp(6)
@@ -82,9 +81,18 @@ model CallContractWithTokenApproved {
   sourceEventIndex      BigInt
   payloadHash           String    @db.VarChar(255)
   commandId             String
-  status                Int       @default(0)
   createdAt       DateTime  @default(now()) @db.Timestamp(6)
   updatedAt       DateTime  @default(now()) @db.Timestamp(6)
+}
+model CommandExecuted {
+  id                    String    @id @db.VarChar(255)
+  sourceChain           String    @db.VarChar(255) 
+  destinationChain      String    @db.VarChar(255)
+  txHash                String    @db.VarChar(255)
+  blockNumber           Int
+  logIndex              Int     
+  commandId             String
+  status                Int       @default(0)
 }
 model Operatorship {
   id   Int    @id @default(autoincrement())

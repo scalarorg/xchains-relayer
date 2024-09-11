@@ -234,7 +234,7 @@ export async function startRelayer() {
     .subscribe(({ event }) => {
         prepareHandler(event, db, 'handleEvmExecutedEvent')
         // Find the array of relay data associated with the event from the database by payload hash
-        .then(() => db.updateEventExecuted(event.args.commandId))
+        .then(() => db.createEvmExecutedEvent(event))
         // Update the event status in the database
         .then((results) =>
           logger.info(`[handleEvmExecutedEvent] Updated event status: ${results}`)

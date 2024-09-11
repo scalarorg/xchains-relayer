@@ -48,7 +48,7 @@ export class EvmClient {
       data: executeData,
       gasLimit: env.GAS_LIMIT,
     }
-    logger.debug(`[EvmClient.gatewayExecute] tx: ${tx}`);
+    logger.debug(`[EvmClient.gatewayExecute] to: ${tx.to}, data: ${tx.data}, gasLimit ${tx.gasLimit}`);
     return this.submitTx(tx).catch((e: any) => {
       logger.error(`[EvmClient.gatewayExecute] Failed ${e.message}`);
       return undefined;
@@ -101,7 +101,7 @@ export class EvmClient {
       .then((unexecuted) => !unexecuted);
   }
 
-  public execute(
+  public async execute(
     contractAddress: string,
     commandId: string,
     sourceChain: string,
@@ -152,7 +152,7 @@ export class EvmClient {
       });
   }
 
-  private submitTx(
+  private async submitTx(
     tx: ethers.providers.TransactionRequest,
     retryAttempt = 0
   ): Promise<ethers.providers.TransactionReceipt> {
@@ -162,10 +162,10 @@ export class EvmClient {
       .sendTransaction(tx)
       .then((t) => t.wait())
       .catch(async (e: any) => {
-        logger.error(
-          `[EvmClient.submitTx] Failed ${e.error.reason} to: ${tx.to} data: ${tx.data}`
-        );
         logger.error(e.error);
+        logger.error(
+          `[EvmClient.submitTx] Failed Wallet address: ${this.wallet.address} to: ${tx.to} data: ${tx.data}`
+        );
         await sleep(this.retryDelay);
         logger.debug(`Retrying tx: ${retryAttempt + 1}`);
         return this.submitTx(tx, retryAttempt + 1);

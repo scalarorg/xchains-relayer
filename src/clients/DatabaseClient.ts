@@ -12,6 +12,7 @@ import {
   ContractCallEventObject,
   ContractCallApprovedEventObject,
   ContractCallApprovedWithMintEventObject,
+  ExecutedEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { logger } from '../logger';
 import { BigNumber, ethers } from 'ethers';
@@ -118,7 +119,7 @@ export class DatabaseClient {
 
   createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
     const id = `${event.hash}-${event.args.sourceEventIndex}-${event.logIndex}`;
-    logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${event.hash}"`);
+    logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${id}"`);
     this.prisma.callContractApproved.create({
       data: {
         id,
@@ -159,6 +160,25 @@ export class DatabaseClient {
       },
     });
   }
+
+  createEvmExecutedEvent(event: EvmEvent<ExecutedEventObject>) {
+    const id = `${event.hash}-${event.logIndex}`;
+    logger.debug(`[DatabaseClient] Create EvmExecuted: "${id}"`);
+    this.prisma.commandExecuted.create({
+      data: {
+        id,
+        sourceChain: event.sourceChain,
+        destinationChain: event.destinationChain,
+        txHash: event.hash,
+        blockNumber: event.blockNumber,
+        logIndex: event.logIndex,
+        commandId: event.args.commandId,
+        status: Status.SUCCESS
+      },
+    }).then((result) => logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`))
+      .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
+  }
+
   createBtcCallContractEvent(event: BtcEventTransaction) {
     const id = `${event.txHash}-${event.logIndex}`;
     console.log('Create BTC Call Contract Event with id: ', id);
@@ -402,29 +422,7 @@ export class DatabaseClient {
     });
     logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
   }
-  async updateEventExecuted(commandId: string) {
-    const status = Status.SUCCESS;
-    const callContractApproved = await this.prisma.callContractApproved.findFirst({
-      where: {
-        commandId,
-      },
-    });
-    if (callContractApproved) {
-      const executeDb = await this.prisma.callContractApproved.update({
-        where: {
-          id: callContractApproved.id,
-        },
-        data: {
-          status,
-          updatedAt: new Date(),
-        },
-      });
-      logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
-    } else {
-      logger.error(`[DBUpdate] Cannot find callContractApproved with commandId: ${commandId}`);
-    }
-    
-  }
+
   async updateEventStatusWithPacketSequence(id: string, status: Status, sequence?: number) {
     const executeDb = await this.prisma.relayData.update({
       where: {
