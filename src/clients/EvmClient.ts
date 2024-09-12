@@ -16,6 +16,7 @@ export class EvmClient {
   private maxRetry: number;
   private retryDelay: number;
   private finalityBlocks: number;
+  private chainConfig: EvmNetworkConfig;
   chainId: string;
 
   constructor(
@@ -23,6 +24,7 @@ export class EvmClient {
     _maxRetry = env.MAX_RETRY,
     _retryDelay = env.RETRY_DELAY
   ) {
+    this.chainConfig = chain;
     this.wallet = new Wallet(
       chain.privateKey,
       new ethers.providers.JsonRpcProvider(chain.rpcUrl)
@@ -164,7 +166,7 @@ export class EvmClient {
       .catch(async (e: any) => {
         logger.error(e.error);
         logger.error(
-          `[EvmClient.submitTx] Failed Wallet address: ${this.wallet.address} to: ${tx.to} data: ${tx.data}`
+          `[EvmClient.submitTx] Failed with Provider: ${this.chainConfig.rpcUrl }, Wallet address: ${this.wallet.address} to: ${tx.to} data: ${tx.data}`
         );
         await sleep(this.retryDelay);
         logger.debug(`Retrying tx: ${retryAttempt + 1}`);

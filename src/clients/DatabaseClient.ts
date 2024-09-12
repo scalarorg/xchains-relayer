@@ -155,6 +155,8 @@ export class DatabaseClient {
         sourceAddress: event.args.sourceAddress,
         contractAddress: event.args.contractAddress,
         payloadHash: event.args.payloadHash,
+        symbol: event.args.symbol,
+        amount: event.args.amount.toBigInt(),
         sourceTxHash: event.args.sourceTxHash,
         sourceEventIndex: event.args.sourceEventIndex.toBigInt()
       },

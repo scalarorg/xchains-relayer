@@ -80,6 +80,8 @@ model CallContractWithTokenApproved {
   sourceTxHash          String    @db.VarChar(255)
   sourceEventIndex      BigInt
   payloadHash           String    @db.VarChar(255)
+  symbol                String    @db.VarChar(255)
+  amount                BigInt
   commandId             String
   createdAt       DateTime  @default(now()) @db.Timestamp(6)
   updatedAt       DateTime  @default(now()) @db.Timestamp(6)
