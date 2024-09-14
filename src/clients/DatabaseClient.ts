@@ -117,10 +117,10 @@ export class DatabaseClient {
     });
   }
 
-  createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
+  async createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
     const id = `${event.hash}-${event.args.sourceEventIndex}-${event.logIndex}`;
     logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${id}"`);
-    this.prisma.callContractApproved.create({
+    return this.prisma.callContractApproved.create({
       data: {
         id,
         sourceChain: event.sourceChain,
@@ -163,10 +163,10 @@ export class DatabaseClient {
     });
   }
 
-  createEvmExecutedEvent(event: EvmEvent<ExecutedEventObject>) {
+  async createEvmExecutedEvent(event: EvmEvent<ExecutedEventObject>) {
     const id = `${event.hash}-${event.logIndex}`;
     logger.debug(`[DatabaseClient] Create EvmExecuted: "${id}"`);
-    this.prisma.commandExecuted.create({
+    return this.prisma.commandExecuted.create({
       data: {
         id,
         sourceChain: event.sourceChain,
