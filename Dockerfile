@@ -1,4 +1,6 @@
-FROM node:16.20.2-bookworm
+# FROM node:16.20.2-bookworm 
+# 240916 TaiVV - fix bug Segmentation fault (core dumped) on node 16.20.2-bookworm
+FROM node:18.20-bookworm
 ARG ENV=dev
 RUN apt update && apt install -y jq
 WORKDIR /app

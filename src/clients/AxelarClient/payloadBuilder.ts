@@ -4,7 +4,7 @@ import {
   SignCommandsRequest as EvmSignCommandsRequest,
 } from '@axelar-network/axelarjs-types/axelar/evm/v1beta1/tx';
 import {
-  ExecuteMessageRequest,
+  RouteMessageRequest as ExecuteMessageRequest,
   CallContractRequest,
   protobufPackage as AxelarProtobufPackage
 } from '@axelar-network/axelarjs-types/axelar/axelarnet/v1beta1/tx';
