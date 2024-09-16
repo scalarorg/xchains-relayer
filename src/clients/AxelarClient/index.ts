@@ -28,21 +28,21 @@ export class AxelarClient {
     return new AxelarClient(signingClient, db, _config.chainId);
   }
 
-  public confirmEvmTx(chain: string, txHash: string) {
+  public async confirmEvmTx(chain: string, txHash: string) {
     const payload = getConfirmGatewayTxPayload(this.signingClient.getAddress(), chain, txHash);
     return this.signingClient.broadcast(payload).catch((e: any) => {
       logger.error(`[AxelarClient.confirmEvmTx] Failed to broadcast ${e.message}`);
     });
   }
 
-  public callContract(chain: string, contractAddress: string, payloadStr: string) {
+  public async callContract(chain: string, contractAddress: string, payloadStr: string) {
     const payload = getCallContractRequest(this.signingClient.getAddress(), chain, contractAddress, payloadStr);
     return this.signingClient.broadcast(payload).catch((e: any) => {
       logger.error(`[AxelarClient.callContract] Failed to broadcast ${e.message}`);
     });
   }
 
-  public getPendingCommands(chain: string) {
+  public async getPendingCommands(chain: string) {
     return this.signingClient.queryClient.evm
       .PendingCommands({
         chain,
@@ -50,7 +50,7 @@ export class AxelarClient {
       .then((result) => result.commands);
   }
 
-  public signCommands(chain: string) {
+  public async signCommands(chain: string) {
     const payload = getSignCommandPayload(this.signingClient.getAddress(), chain);
 
     return this.signingClient.broadcast(payload).catch((e: any) => {

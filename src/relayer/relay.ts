@@ -232,13 +232,11 @@ export async function startRelayer() {
       return of({ event, evmClient });
     }))
     .subscribe(({ event }) => {
-        prepareHandler(event, db, 'handleEvmExecutedEvent')
+      prepareHandler(event, db, 'handleEvmExecutedEvent')
         // Find the array of relay data associated with the event from the database by payload hash
         .then(() => db.createEvmExecutedEvent(event))
         // Update the event status in the database
-        .then((results) =>
-          logger.info(`[handleEvmExecutedEvent] Updated event status: ${results}`)
-        )
+        .then((results) => logger.debug(`[handleEvmExecutedEvent] Updated event status: ${results}`))
         .catch((e) => handleAnyError(db, 'handleEvmExecutedEvent', e));
      });
   // Listening for evm events

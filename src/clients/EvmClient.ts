@@ -51,7 +51,7 @@ export class EvmClient {
       gasLimit: env.GAS_LIMIT,
     }
     logger.debug(`[EvmClient.gatewayExecute] to: ${tx.to}, data: ${tx.data}, gasLimit ${tx.gasLimit}`);
-    return this.submitTx(tx).catch((e: any) => {
+    return this.submitTx(tx).catch((e) => {
       logger.error(`[EvmClient.gatewayExecute] Failed ${e.message}`);
       return undefined;
     });
@@ -62,7 +62,7 @@ export class EvmClient {
   }
 
   // warning: this function should be called after the command is executed, otherwise it will always return false
-  public isCallContractExecuted(
+  public async isCallContractExecuted(
     commandId: string,
     sourceChain: string,
     sourceAddress: string,
@@ -81,7 +81,7 @@ export class EvmClient {
   }
 
   // warning: this function should be called after the command is executed, otherwise it will always return false
-  public isCallContractWithTokenExecuted(
+  public async isCallContractWithTokenExecuted(
     commandId: string,
     sourceChain: string,
     sourceAddress: string,
@@ -117,13 +117,13 @@ export class EvmClient {
     return executable.populateTransaction
       .execute(commandId, sourceChain, sourceAddress, payload)
       .then((tx) => this.submitTx(tx))
-      .catch((e: any) => {
+      .catch((e) => {
         logger.error(`[EvmClient.execute] Failed ${JSON.stringify(e)}`);
         return undefined;
       });
   }
 
-  public executeWithToken(
+  public async executeWithToken(
     destContractAddress: string,
     commandId: string,
     sourceChain: string,
@@ -146,7 +146,7 @@ export class EvmClient {
         amount
       )
       .then((tx) => this.submitTx(tx))
-      .catch((e: any) => {
+      .catch((e) => {
         logger.error(
           `[EvmClient.executeWithToken] Failed ${JSON.stringify(e)}`
         );
@@ -160,11 +160,19 @@ export class EvmClient {
   ): Promise<ethers.providers.TransactionReceipt> {
     // submit tx with retries
     if (retryAttempt >= this.maxRetry) throw new Error('Max retry exceeded');
+    //TaiVV 2024-09-14: Add gasLimit to tx
+    logger.debug(`tx: ${JSON.stringify(tx)}`); 
+    if (!tx.gasLimit) {
+      tx.gasLimit = env.GAS_LIMIT
+    }
     return this.wallet
       .sendTransaction(tx)
-      .then((t) => t.wait())
-      .catch(async (e: any) => {
-        logger.error(e.error);
+      .then((t) => {
+        logger.debug(JSON.stringify(t));
+        return t.wait()
+      })
+      .catch(async (e) => {
+        if (e) logger.error(e);
         logger.error(
           `[EvmClient.submitTx] Failed with Provider: ${this.chainConfig.rpcUrl }, Wallet address: ${this.wallet.address} to: ${tx.to} data: ${tx.data}`
         );

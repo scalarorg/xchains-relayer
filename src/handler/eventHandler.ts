@@ -1,3 +1,4 @@
+import { decodeGatewayExecuteData } from '../utils/evm';
 import { AxelarClient, BtcClient, DatabaseClient, EvmClient } from '..';
 import { logger } from '../logger';
 import {
@@ -126,7 +127,7 @@ export async function handleCosmosToEvmEvent<
   const tx = await evmClient.gatewayExecute(executeData);
   if (!tx) return;
   logger.info(`[handleCosmosToEvmEvent] Execute: ${tx.transactionHash}`);
-
+  logger.debug(`[handleCosmosToEvmEvent] Execute: ${JSON.stringify(tx)}`);
   return tx;
 }
 /*
@@ -208,9 +209,9 @@ export async function handleCosmosToEvmApprovedEvent<
     event.args.destinationChain,
     batchedCommandId
   );
-
+  const decodedExecuteData = decodeGatewayExecuteData(executeData);
   logger.info(`[handleCosmosToEvmApprovedEvent] BatchCommands: ${JSON.stringify(executeData)}`);
-
+  logger.info(`[handleCosmosToEvmApprovedEvent] DecodedData: ${JSON.stringify(decodedExecuteData)}`);
   const tx = await evmClient.gatewayExecute(executeData);
   if (!tx) return;
   logger.info(`[handleCosmosToEvmApprovedEvent] Execute: ${tx.transactionHash}`);
@@ -255,11 +256,16 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
         status: Status.SUCCESS,
       });
       logger.info(
-        `[handleCosmosToEvmCallContractCompleteEvent] Already executed txId ${data.id} with commandId ${commandId} for . Will mark the status in the DB as Success.`
+        `[handleCosmosToEvmCallContractCompleteEvent] Already executed txId ${data.id} with commandId ${commandId}. Will mark the status in the DB as Success.`
       );
       continue;
     }
-
+    logger.debug(`[handleCosmosToEvmCallContractCompleteEvent] Execute: 
+      contractAddress: ${contractAddress}
+      commandId: ${commandId}
+      sourceChain: ${sourceChain}
+      sourceAddress: ${sourceAddress}
+      payload: ${payload}`);
     const tx = await evmClient.execute(
       contractAddress,
       commandId,
