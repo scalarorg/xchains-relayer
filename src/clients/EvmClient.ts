@@ -81,7 +81,7 @@ export class EvmClient {
   }
 
   // warning: this function should be called after the command is executed, otherwise it will always return false
-  public isCallContractWithTokenExecuted(
+  public async isCallContractWithTokenExecuted(
     commandId: string,
     sourceChain: string,
     sourceAddress: string,

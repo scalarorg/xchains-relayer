@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 export const env = {
   DEV: process.env.DEV,
+  CONFIG_DIR: process.env.CONFIG_DIR || '/app/chains',
   AXELAR_MNEMONIC: process.env.AXELAR_MNEMONIC || '',
   EVM_PRIVATE_KEY: process.env.EVM_PRIVATE_KEY || '',
   BTC_PRIVATE_KEY: process.env.BCT_PRIVATE_KEY || '',
