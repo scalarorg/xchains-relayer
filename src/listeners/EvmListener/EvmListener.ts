@@ -40,21 +40,25 @@ export class EvmListener {
     const eventFilter = event.getEventFilter(this.gatewayContract);
     
     this.gatewayContract.on(eventFilter, async (...args) => {
-      const ev: Event = args[args.length - 1];
-      logger.debug(`[EVMListener] [${this.chainName}] Received event from transactionHash: ${ev.transactionHash}`);
-      if (ev.blockNumber <= this.currentBlock) return;
+      try {
+        const ev: Event = args[args.length - 1];
+        logger.debug(`[EVMListener] [${this.chainName}] Received event from transactionHash: ${ev.transactionHash}`);
+        if (ev.blockNumber <= this.currentBlock) return;
 
-      // TaiVV 20240829: Accept all destination chains not only cosmos chains
-      // if (env.CHAIN_ENV === 'testnet' && !event.isAcceptedChain(this.cosmosChainNames, ev.args)) return;
+        // TaiVV 20240829: Accept all destination chains not only cosmos chains
+        // if (env.CHAIN_ENV === 'testnet' && !event.isAcceptedChain(this.cosmosChainNames, ev.args)) return;
 
-      const evmEvent = await event.parseEvent(
-        this.chainName,
-        this.gatewayContract.provider,
-        ev,
-        this.finalityBlocks
-      );
+        const evmEvent = await event.parseEvent(
+          this.chainName,
+          this.gatewayContract.provider,
+          ev,
+          this.finalityBlocks
+        );
 
-      subject.next(evmEvent);
+        subject.next(evmEvent);
+      } catch (error) {
+        logger.error(`[EVMListener] [${this.chainName}] Error while processing event: ${error}`);
+      }
     });
   }
 }

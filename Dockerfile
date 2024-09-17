@@ -1,5 +1,3 @@
-# FROM node:16.20.2-bookworm 
-# 240916 TaiVV - fix bug Segmentation fault (core dumped) on node 16.20.2-bookworm
 FROM node:18.20-bookworm
 ARG ENV=dev
 RUN apt update && apt install -y jq
@@ -23,6 +21,8 @@ COPY tsconfig.json .
 
 RUN sed -i 's/"strict": true/"strict": false/g' "tsconfig.json"
 RUN yarn --frozen-lockfile
+RUN npx prisma db push
+RUN npx prisma generate
 RUN yarn build
 
 # Don't run production as root
