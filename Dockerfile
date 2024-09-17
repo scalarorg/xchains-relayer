@@ -21,7 +21,6 @@ COPY tsconfig.json .
 
 RUN sed -i 's/"strict": true/"strict": false/g' "tsconfig.json"
 RUN yarn --frozen-lockfile
-RUN npx prisma db push
 RUN npx prisma generate
 RUN yarn build
 
