@@ -1,33 +1,63 @@
 import { ethers, logger } from 'ethers';
-// Testnet
-import testnetAxelar from '../../data/testnet/axelar.json';
-import testnetCosmos from '../../data/testnet/cosmos.json';
-import testnetEvm from '../../data/testnet/evm.json';
-import testnetBtc from '../../data/testnet/btc.json';
-import testnetRabbitmq from '../../data/testnet/rabbitmq.json';
-// Devnet
-import devnetAxelar from '../../data/devnet/axelar.json';
-import devnetCosmos from '../../data/devnet/cosmos.json';
-import devnetEvm from '../../data/devnet/evm.json';
-import devnetBtc from '../../data/devnet/btc.json';
-import devnetRabbitmq from '../../data/devnet/rabbitmq.json';
-// Local
-import localAxelar from '../../data/local/axelar.json';
-import localCosmos from '../../data/local/cosmos.json';
-import localEvm from '../../data/local/evm.json';
-import localBtc from '../../data/local/btc.json';
-import localRabbitmq from '../../data/local/rabbitmq.json';
 import fs from 'fs';
-
 import { env } from '.';
-import { BtcNetworkConfig, CosmosNetworkConfig, EvmNetworkConfig, RabbitMQConfig } from './types';
+import {
+  AxelarConfig,
+  BtcNetworkConfig,
+  CosmosNetworkConfig,
+  EvmNetworkConfig,
+  RabbitMQConfig,
+} from './types';
 
+const getConfig = () => {
+  const chainEnv = env.CHAIN_ENV;
+  const dir = `data/${chainEnv}`;
+  switch (chainEnv) {
+    case 'local':
+      logger.info('[getConfig] Using local configuration');
+      break;
+    case 'devnet':
+      logger.info('[getConfig] Using devnet configuration');
+      break;
+    case 'testnet':
+      logger.info('[getConfig] Using testnet configuration');
+      break;
+    default:
+      logger.throwError('[getConfig] Invalid CHAIN_ENV', ethers.errors.INVALID_ARGUMENT);
+  }
 
-const cosmos = env.CHAIN_ENV === 'local' ? localCosmos :(env.CHAIN_ENV === 'devnet' ? devnetCosmos : testnetCosmos);
-const axelar = env.CHAIN_ENV === 'local' ? localAxelar : (env.CHAIN_ENV === 'devnet' ? devnetAxelar : testnetAxelar);
-const evm = env.CHAIN_ENV === 'local' ? localEvm : (env.CHAIN_ENV === 'devnet' ? devnetEvm : testnetEvm);
-const btc = env.CHAIN_ENV === 'local' ? localBtc : (env.CHAIN_ENV === 'devnet' ? devnetBtc : testnetBtc);
-const rabbitmq = env.CHAIN_ENV === 'local' ? localRabbitmq : (env.CHAIN_ENV === 'devnet' ? devnetRabbitmq : testnetRabbitmq);
+  const axelarConfig = fs.readFileSync(`${dir}/axelar.json`, 'utf8');
+  const axelarConfigJson = JSON.parse(axelarConfig) as AxelarConfig;
+
+  const btcConfig = fs.readFileSync(`${dir}/btc.json`, 'utf8');
+  const btcConfigJson = JSON.parse(btcConfig) as BtcNetworkConfig[];
+
+  const cosmosConfig = fs.readFileSync(`${dir}/cosmos.json`, 'utf8');
+  const cosmosConfigJson = JSON.parse(cosmosConfig) as CosmosNetworkConfig[];
+
+  const evmConfig = fs.readFileSync(`${dir}/evm.json`, 'utf8');
+  const evmConfigJson = JSON.parse(evmConfig) as EvmNetworkConfig[];
+
+  const rabbitmqConfig = fs.readFileSync(`${dir}/rabbitmq.json`, 'utf8');
+  const rabbitmqConfigJson = JSON.parse(rabbitmqConfig) as RabbitMQConfig[];
+  logger.debug(`[getConfig] axelarConfigJson: ${JSON.stringify(axelarConfigJson)}`);
+  logger.debug(`[getConfig] btcConfigJson: ${JSON.stringify(btcConfigJson)}`);
+  logger.debug(`[getConfig] cosmosConfigJson: ${JSON.stringify(cosmosConfigJson)}`);
+  logger.debug(`[getConfig] evmConfigJson: ${JSON.stringify(evmConfigJson)}`);
+  logger.debug(`[getConfig] rabbitmqConfigJson: ${JSON.stringify(rabbitmqConfigJson)}`);
+
+  return {
+    axelar: axelarConfigJson,
+    btc: btcConfigJson,
+    cosmos: cosmosConfigJson,
+    evm: evmConfigJson,
+    rabbitmq: rabbitmqConfigJson,
+  };
+};
+
+getConfig();
+
+const { axelar, btc, cosmos, evm, rabbitmq } = getConfig();
 
 function getEvmPrivateKey(network: string): string {
   const filePath = `${env.CONFIG_DIR}/${network}/config.json`;
@@ -37,7 +67,10 @@ function getEvmPrivateKey(network: string): string {
   if (networkConfig.privateKey) {
     privateKey = networkConfig.privateKey;
   } else if (networkConfig.mnemonic && networkConfig.walletIndex) {
-    const hdWallet = ethers.Wallet.fromMnemonic(networkConfig.mnemonic, `m/44'/60'/0'/0/${networkConfig.walletIndex}`);
+    const hdWallet = ethers.Wallet.fromMnemonic(
+      networkConfig.mnemonic,
+      `m/44'/60'/0'/0/${networkConfig.walletIndex}`
+    );
     privateKey = hdWallet.privateKey;
   }
   logger.debug(`[getEvmPrivateKey] network: ${network}, privateKey: ${privateKey}`);

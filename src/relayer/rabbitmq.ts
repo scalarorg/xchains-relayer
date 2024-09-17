@@ -17,7 +17,7 @@ function base64ToDecimal(base64Value: string): string {
  * @param chainId: string ex. 11155111
  * @returns string | undefined
  */
-export function getChainNameById(chainId: string): string | undefined{
+export function getChainNameById(chainId: string): string | undefined {
   for (const chain of evmChains) {
     if (chain.chainId === chainId) {
       return chain.name;
@@ -29,7 +29,10 @@ export function getChainNameById(chainId: string): string | undefined{
  * @param btcTransaction: BtcTransaction
  * @returns BtcEventTransaction
  */
-export function createBtcEventTransaction(sourceChain: string, btcTransaction: BtcTransaction): BtcEventTransaction {
+export function createBtcEventTransaction(
+  sourceChain: string,
+  btcTransaction: BtcTransaction
+): BtcEventTransaction {
   logger.info(`[createBtcEventTransaction] 
       txHash: ${btcTransaction.vault_tx_hash_hex},
       user_address: ${btcTransaction.chain_id_user_address},
@@ -39,7 +42,9 @@ export function createBtcEventTransaction(sourceChain: string, btcTransaction: B
   const amount_decode = base64ToDecimal(btcTransaction.amount_minting);
   const chainId = base64ToDecimal(btcTransaction.chain_id);
   const amount = ethers.utils.parseUnits(amount_decode, 0);
-  logger.info(`[createBtcEventTransaction] decoded: user_address: ${toAddress}, amount : ${amount}, chain_id: ${chainId}`);
+  logger.info(
+    `[createBtcEventTransaction] decoded: user_address: ${toAddress}, amount : ${amount}, chain_id: ${chainId}`
+  );
   const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
   const payloadHash = ethers.utils.keccak256(payload);
   const destinationChain = getChainNameById(chainId);
@@ -61,6 +66,7 @@ export function createBtcEventTransaction(sourceChain: string, btcTransaction: B
     payload,
     payloadHash,
     args: btcTransaction,
+    stakerPublicKey: btcTransaction.staker_pk_hex,
   };
   return btcEvent;
 }
@@ -83,7 +89,11 @@ export async function handleMessage(
     try {
       const btcTransaction: BtcTransaction = JSON.parse(msg.content.toString());
       // -util. util for stop consume at specific height
-      if (rabbitmqConfig.stopHeight != null &&  rabbitmqConfig.stopHeight > 0 && btcTransaction.staking_start_height > rabbitmqConfig.stopHeight) {
+      if (
+        rabbitmqConfig.stopHeight != null &&
+        rabbitmqConfig.stopHeight > 0 &&
+        btcTransaction.staking_start_height > rabbitmqConfig.stopHeight
+      ) {
         logger.info(
           `[handleScalarRabbitmqEvent] Stop consume at height: ${rabbitmqConfig.stopHeight}, current height: ${btcTransaction.staking_start_height}`
         );
@@ -91,7 +101,10 @@ export async function handleMessage(
         return;
       }
       //0. Create event object
-      const btcEvent: BtcEventTransaction = createBtcEventTransaction(rabbitmqConfig.sourceChain, btcTransaction);
+      const btcEvent: BtcEventTransaction = createBtcEventTransaction(
+        rabbitmqConfig.sourceChain,
+        btcTransaction
+      );
       try {
         // 1. Connect to the database
         await db.connect();
@@ -122,7 +135,9 @@ export async function handleBtcEvent(
   content: BtcEventTransaction,
   msg: amqp.Message
 ) {
-  logger.info(`[handleScalarRabbitmqEvent] sourceChain ${content.sourceChain}, txHash: ${content.txHash}`);
+  logger.info(
+    `[handleScalarRabbitmqEvent] sourceChain ${content.sourceChain}, txHash: ${content.txHash}`
+  );
   const confirmTx = await axelarClient.confirmEvmTx(content.sourceChain, content.txHash);
   if (confirmTx) {
     logger.info(`[handleScalarRabbitmqEvent] Confirmed: ${'0x' + confirmTx.transactionHash}`);
@@ -132,7 +147,11 @@ export async function handleBtcEvent(
     channel.nack(msg, false, false);
   }
 }
-export async function startRabbitMQRelayer(rabbitmqConfig: RabbitMQConfig, db: DatabaseClient, axelarClient: AxelarClient) {
+export async function startRabbitMQRelayer(
+  rabbitmqConfig: RabbitMQConfig,
+  db: DatabaseClient,
+  axelarClient: AxelarClient
+) {
   // Create a connection and a channel
   // Connect to the RabbitMQ server if the RabbitMQ is enabled
   if (rabbitmqConfig.enabled !== false) {
@@ -162,7 +181,8 @@ export async function startRabbitMQRelayer(rabbitmqConfig: RabbitMQConfig, db: D
         logger.info(`Consume messages from the queue ${queue}`);
         channel.consume(
           queue,
-          async (msg: amqp.Message | null) => await handleMessage(rabbitmqConfig, db, axelarClient, channel, msg),
+          async (msg: amqp.Message | null) =>
+            await handleMessage(rabbitmqConfig, db, axelarClient, channel, msg),
           { noAck: false }
         );
       });

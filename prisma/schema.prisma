@@ -43,6 +43,7 @@ model CallContract {
   payload               String
   payloadHash           String    @db.VarChar(255)
   sourceAddress         String    @db.VarChar(255)
+  stakerPublicKey       String    @db.VarChar(255) // Hex 32 bytes
   createdAt             DateTime  @default(now()) @db.Timestamp(6)
   updatedAt             DateTime  @default(now()) @db.Timestamp(6)
   callContractApproved  CallContractApproved? 

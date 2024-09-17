@@ -1,0 +1,12 @@
+[
+    {
+        "host": "rabbitmq",
+        "port": 5672,
+        "user": "user",
+        "password": "password",
+        "queue": "active_vault_queue",
+        "queueType": "quorum",
+        "routingKey": "active_vault_queue_routing_key",
+        "sourceChain": "bitcoin"
+    }
+]
