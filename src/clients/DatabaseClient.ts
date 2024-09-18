@@ -39,6 +39,7 @@ export class DatabaseClient {
             payloadHash: event.args.payloadHash.toLowerCase(),
             contractAddress: event.args.contractAddress.toLowerCase(),
             sourceAddress: event.args.sender.toLowerCase(),
+            stakerPublicKey: '', //TODO: Add stakerPublicKey
           },
         },
       },
@@ -87,6 +88,7 @@ export class DatabaseClient {
             payloadHash: event.args.payloadHash.toLowerCase(),
             contractAddress: event.args.destinationContractAddress.toLowerCase(),
             sourceAddress: event.args.sender.toLowerCase(),
+            stakerPublicKey: '', //TODO: Add stakerPublicKey
           },
         },
       },
@@ -120,29 +122,35 @@ export class DatabaseClient {
   async createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
     const id = `${event.hash}-${event.args.sourceEventIndex}-${event.logIndex}`;
     logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${id}"`);
-    return this.prisma.callContractApproved.create({
-      data: {
-        id,
-        sourceChain: event.sourceChain,
-        destinationChain: event.destinationChain,
-        txHash: event.hash,
-        blockNumber: event.blockNumber,
-        logIndex: event.logIndex,
-        commandId: event.args.commandId,
-        sourceAddress: event.args.sourceAddress,
-        contractAddress: event.args.contractAddress,
-        payloadHash: event.args.payloadHash,
-        sourceTxHash: event.args.sourceTxHash,
-        sourceEventIndex: Number(event.args.sourceEventIndex.toBigInt())
-      },
-    }).then((result) => logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`))
+    return this.prisma.callContractApproved
+      .create({
+        data: {
+          id,
+          sourceChain: event.sourceChain,
+          destinationChain: event.destinationChain,
+          txHash: event.hash,
+          blockNumber: event.blockNumber,
+          logIndex: event.logIndex,
+          commandId: event.args.commandId,
+          sourceAddress: event.args.sourceAddress,
+          contractAddress: event.args.contractAddress,
+          payloadHash: event.args.payloadHash,
+          sourceTxHash: event.args.sourceTxHash,
+          sourceEventIndex: Number(event.args.sourceEventIndex.toBigInt()),
+        },
+      })
+      .then((result) =>
+        logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
+      )
       .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
   }
 
-  createEvmContractCallApprovedWithMintEvent(event: EvmEvent<ContractCallApprovedWithMintEventObject>) {
+  createEvmContractCallApprovedWithMintEvent(
+    event: EvmEvent<ContractCallApprovedWithMintEventObject>
+  ) {
     const id = `${event.hash}-${event.logIndex}`;
     console.log('Create Evm Contract Call Approved With Mint Event with id: ', `${id}`);
-  
+
     return this.prisma.callContractWithTokenApproved.create({
       data: {
         id,
@@ -158,7 +166,7 @@ export class DatabaseClient {
         symbol: event.args.symbol,
         amount: event.args.amount.toBigInt(),
         sourceTxHash: event.args.sourceTxHash,
-        sourceEventIndex: event.args.sourceEventIndex.toBigInt()
+        sourceEventIndex: event.args.sourceEventIndex.toBigInt(),
       },
     });
   }
@@ -166,18 +174,22 @@ export class DatabaseClient {
   async createEvmExecutedEvent(event: EvmEvent<ExecutedEventObject>) {
     const id = `${event.hash}-${event.logIndex}`;
     logger.debug(`[DatabaseClient] Create EvmExecuted: "${id}"`);
-    return this.prisma.commandExecuted.create({
-      data: {
-        id,
-        sourceChain: event.sourceChain,
-        destinationChain: event.destinationChain,
-        txHash: event.hash,
-        blockNumber: event.blockNumber,
-        logIndex: event.logIndex,
-        commandId: event.args.commandId,
-        status: Status.SUCCESS
-      },
-    }).then((result) => logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`))
+    return this.prisma.commandExecuted
+      .create({
+        data: {
+          id,
+          sourceChain: event.sourceChain,
+          destinationChain: event.destinationChain,
+          txHash: event.hash,
+          blockNumber: event.blockNumber,
+          logIndex: event.logIndex,
+          commandId: event.args.commandId,
+          status: Status.SUCCESS,
+        },
+      })
+      .then((result) =>
+        logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
+      )
       .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
   }
 
@@ -192,12 +204,13 @@ export class DatabaseClient {
         callContract: {
           create: {
             blockNumber: event.blockNumber,
-            payload: event.payload.toLowerCase(),            
+            payload: event.payload.toLowerCase(),
             payloadHash: event.payloadHash.toLowerCase(),
             contractAddress: event.destinationContractAddress.toLowerCase(),
             sourceAddress: event.sender.toLowerCase(),
             amount: event.mintingAmount,
-            symbol: "",
+            symbol: '',
+            stakerPublicKey: event.stakerPublicKey,
           },
         },
       },

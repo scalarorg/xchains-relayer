@@ -1,0 +1,8 @@
+{
+  "chainId": "scalar-testnet-1",
+  "denom": "uaxl",
+  "gasPrice": "0.0125",
+  "rpcUrl": "http://scalarnode1:26657",
+  "lcdUrl": "http://scalarnode1:2317",
+  "ws": "ws://scalarnode1:26657/websocket"
+}

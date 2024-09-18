@@ -1,0 +1,52 @@
+[
+    {
+        "network": "testnet",
+        "chainId": "1",
+        "id": "bitcoin-testnet",
+        "name": "bitcoin-testnet",
+        "gateway": "0xda8367783782EC92BaDae3e534a9FCcb3fa6eF1C",
+        "_comment": "Remove gateway address in xchains core's btc module",
+        "type": "broadcast",
+        "host": "192.168.1.253",
+        "port": 18332,
+        "user": "mike",
+        "password": "apd3g41pkl"
+    },
+    {
+        "network": "testnet",
+        "chainId": "10",
+        "id": "btc-testnet-signer",
+        "name": "btc-testnet-signer",
+        "type": "signer",
+        "host": "bitcoind",
+        "port": 18332,
+        "user": "user",
+        "password": "password",
+        "address": "tb1qe48m5hvvhp9e4q4eh2u0kx4x0jxx3q9n70del5"
+    },
+    {
+        "network": "regtest",
+        "chainId": "2",
+        "id": "bitcoin-regtest",
+        "name": "bitcoin-regtest",
+        "gateway": "0xda8367783782EC92BaDae3e534a9FCcb3fa6eF1C",
+        "_comment": "Remove gateway address in xchains core's btc module",
+        "type": "broadcast",
+        "host": "bitcoind",
+        "port": 18332,
+        "user": "user",
+        "password": "password"
+    },
+    {
+        "network": "regtest",
+        "chainId": "20",
+        "id": "btc-regtest-signer",
+        "name": "btc-regtest-signer",
+        "type": "signer",
+        "host": "bitcoind",
+        "port": 18332,
+        "user": "user",
+        "password": "password",
+        "address": "tb1qe48m5hvvhp9e4q4eh2u0kx4x0jxx3q9n70del5"
+    }
+]

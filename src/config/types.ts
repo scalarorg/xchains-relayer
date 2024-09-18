@@ -9,13 +9,13 @@ export interface CosmosNetworkConfig {
 }
 
 export interface EvmNetworkConfig {
-  chainId: string;    // chain id in number, parsed from btcTransaction.chain_id
+  chainId: string; // chain id in number, parsed from btcTransaction.chain_id
   id: string;
-  name: string,
-  rpcUrl: string,
-  gateway: string,
-  finality: number,
-  privateKey: string
+  name: string;
+  rpcUrl: string;
+  gateway: string;
+  finality: number;
+  privateKey: string;
 }
 export interface BtcNetworkConfig {
   network: string;
@@ -39,4 +39,13 @@ export interface RabbitMQConfig {
   sourceChain: string;
   enabled?: boolean;
   stopHeight?: number;
+}
+
+export interface AxelarConfig {
+  chainId: string;
+  denom: string;
+  gasPrice: string;
+  rpcUrl: string;
+  lcdUrl: string;
+  ws: string;
 }
