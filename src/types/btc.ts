@@ -11,6 +11,7 @@ export interface BtcEventTransaction {
     payloadHash: string;
     args: BtcTransaction;
     stakerPublicKey: string;
+    vaultTxHex: string;
 }
 export interface BtcTransaction {
     event_type: number,

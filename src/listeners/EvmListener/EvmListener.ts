@@ -29,7 +29,9 @@ export class EvmListener {
     event: EvmListenerEvent<EventObject, Event>,
     subject: Subject<EvmEvent<EventObject>>
   ) {
-    logger.info(`[EVMListener] [${this.chainName}] Listening to "${event.name}" event from gateway contract "${this.gatewayContract.address}"`);
+    logger.info(
+      `[EVMListener] [${this.chainName}] Listening to "${event.name}" event from gateway contract "${this.gatewayContract.address}"`
+    );
 
     // clear all listeners before subscribe a new one.
     this.gatewayContract.removeAllListeners();
@@ -38,11 +40,13 @@ export class EvmListener {
     this.currentBlock = await this.gatewayContract.provider.getBlockNumber();
 
     const eventFilter = event.getEventFilter(this.gatewayContract);
-    
+
     this.gatewayContract.on(eventFilter, async (...args) => {
       try {
         const ev: Event = args[args.length - 1];
-        logger.debug(`[EVMListener] [${this.chainName}] Received event from transactionHash: ${ev.transactionHash}`);
+        logger.debug(
+          `[EVMListener] [${this.chainName}] [${event.name}] Received event from transactionHash: ${ev.transactionHash}`
+        );
         if (ev.blockNumber <= this.currentBlock) return;
 
         // TaiVV 20240829: Accept all destination chains not only cosmos chains
@@ -53,6 +57,12 @@ export class EvmListener {
           this.gatewayContract.provider,
           ev,
           this.finalityBlocks
+        );
+
+        logger.debug(
+          `[EVMListener] [${this.chainName}] [${event.name}] Parsed event: ${JSON.stringify(
+            evmEvent
+          )}`
         );
 
         subject.next(evmEvent);

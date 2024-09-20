@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { ethers, logger } from 'ethers';
 import { TypedEvent } from '../../types/contracts/common';
 
 export const parseAnyEvent = async (
@@ -8,9 +8,9 @@ export const parseAnyEvent = async (
   finalityBlocks = 1
 ) => {
   const receipt = await event.getTransactionReceipt();
-  const eventIndex = receipt.logs.findIndex(
-    (log) => log.logIndex === event.logIndex
-  );
+  const eventIndex = receipt.logs.findIndex((log) => log.logIndex === event.logIndex);
+
+  logger.debug(`[EVMListener] [${currentChainName}] [parseAnyEvent] eventIndex: ${eventIndex}`);
 
   return {
     hash: event.transactionHash,
@@ -24,7 +24,6 @@ export const parseAnyEvent = async (
     args: filterEventArgs(event),
   };
 };
-
 
 const filterEventArgs = (event: TypedEvent) => {
   return Object.entries(event.args).reduce((acc, [key, value]) => {
