@@ -33,29 +33,20 @@ export function createBtcEventTransaction(
   sourceChain: string,
   btcTransaction: BtcTransaction
 ): BtcEventTransaction {
-  logger.info(`[createBtcEventTransaction] 
-      txHash: ${btcTransaction.vault_tx_hash_hex},
-      user_address: ${btcTransaction.chain_id_user_address},
-      amount_minting: ${btcTransaction.amount_minting}
-      chain_id: ${btcTransaction.chain_id}`);
   const toAddress = base64ToHex(btcTransaction.chain_id_user_address);
   const amount_decode = base64ToDecimal(btcTransaction.amount_minting);
   const chainId = base64ToDecimal(btcTransaction.chain_id);
   const amount = ethers.utils.parseUnits(amount_decode, 0);
-  logger.info(
-    `[createBtcEventTransaction] decoded: user_address: ${toAddress}, amount : ${amount}, chain_id: ${chainId}`
-  );
+
   const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
   const payloadHash = ethers.utils.keccak256(payload);
   const destinationChain = getChainNameById(chainId);
   if (destinationChain === undefined) {
-    throw new Error(`[createBtcEventTransaction] destination chain not found: ${chainId}`);
+    throw new Error(`[RabbitMQ][BTC Event Parser]: destination chain not found: ${chainId}`);
   }
-  logger.info(`[createBtcEventTransaction] 
-      sourceChain: ${base64ToHex(btcTransaction.chain_id_user_address)}, 
-      destinationChain: ${destinationChain}`);
+
   const btcEvent: BtcEventTransaction = {
-    txHash: `0x${btcTransaction.vault_tx_hash_hex}`,
+    txHash: `0x${btcTransaction.vault_tx_hash_hex.toLowerCase()}`,
     logIndex: 0,
     blockNumber: 0,
     mintingAmount: Number(amount).toString(),
@@ -67,6 +58,7 @@ export function createBtcEventTransaction(
     payloadHash,
     args: btcTransaction,
     stakerPublicKey: btcTransaction.staker_pk_hex,
+    vaultTxHex: btcTransaction.vault_tx_hex,
   };
   return btcEvent;
 }
@@ -105,6 +97,9 @@ export async function handleMessage(
         rabbitmqConfig.sourceChain,
         btcTransaction
       );
+
+      logger.debug(`[RabbitMQ] Received BTC Event: ${JSON.stringify(btcEvent)}`);
+
       try {
         // 1. Connect to the database
         await db.connect();
@@ -135,15 +130,19 @@ export async function handleBtcEvent(
   content: BtcEventTransaction,
   msg: amqp.Message
 ) {
-  logger.info(
-    `[handleScalarRabbitmqEvent] sourceChain ${content.sourceChain}, txHash: ${content.txHash}`
-  );
   const confirmTx = await axelarClient.confirmEvmTx(content.sourceChain, content.txHash);
   if (confirmTx) {
-    logger.info(`[handleScalarRabbitmqEvent] Confirmed: ${'0x' + confirmTx.transactionHash}`);
+    logger.info(`[RabbitMQ][Scalar]: Confirmed BTC Event:
+      tx_hash: ${content.txHash},
+      source_chain: ${content.sourceChain},
+      confirm_tx_hash: ${'0x' + confirmTx.transactionHash}
+      `);
+
     channel.ack(msg);
   } else {
-    logger.error(`[handleScalarRabbitmqEvent] Failed to confirm: ${content.txHash}`);
+    logger.error(
+      `[RabbitMQ][Scalar]: Failed to confirm BTC Event: tx_hash: ${content.txHash}`
+    );
     channel.nack(msg, false, false);
   }
 }

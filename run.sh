@@ -25,7 +25,6 @@ local() {
         ENV=local
     fi
 
-    rm -r data
     rm -r chains
     mkdir -p data/${ENV}
 

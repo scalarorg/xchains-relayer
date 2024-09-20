@@ -36,7 +36,10 @@ model CallContractWithToken {
 
 model CallContract {
   id                    String    @id @db.VarChar(255)
+  txHash                String    @db.VarChar(255)
+  txHex                 Bytes?  
   blockNumber           Int?      @default(0)
+  logIndex              Int? 
   contractAddress       String    @db.VarChar(255)
   amount                String?    @db.VarChar(255)
   symbol                String?    @db.VarChar(255)

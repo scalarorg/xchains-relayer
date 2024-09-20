@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { BigNumber, ethers } from 'ethers';
+import { logger } from '../logger';
 import {
   BtcEventTransaction,
   ContractCallSubmitted,
@@ -8,14 +10,12 @@ import {
   Status,
 } from '../types';
 import {
-  ContractCallWithTokenEventObject,
-  ContractCallEventObject,
   ContractCallApprovedEventObject,
   ContractCallApprovedWithMintEventObject,
+  // ContractCallWithTokenEventObject,
+  ContractCallEventObject,
   ExecutedEventObject,
 } from '../types/contracts/IAxelarGateway';
-import { logger } from '../logger';
-import { BigNumber, ethers } from 'ethers';
 
 export class DatabaseClient {
   private prisma: PrismaClient;
@@ -24,151 +24,181 @@ export class DatabaseClient {
     this.prisma = new PrismaClient();
   }
 
-  createCosmosContractCallEvent(event: IBCEvent<ContractCallSubmitted>) {
-    console.log('Create Cosmos Contract Call Event with id: ', `${event.args.messageId}`);
-  
-    return this.prisma.relayData.create({
-      data: {
-        id: `${event.args.messageId}`,
-        from: event.args.sourceChain.toLowerCase(),
-        to: event.args.destinationChain.toLowerCase(),
-        status: Status.PENDING,
-        callContract: {
-          create: {
-            payload: event.args.payload.toLowerCase(),
-            payloadHash: event.args.payloadHash.toLowerCase(),
-            contractAddress: event.args.contractAddress.toLowerCase(),
-            sourceAddress: event.args.sender.toLowerCase(),
-            stakerPublicKey: '', //TODO: Add stakerPublicKey
-          },
-        },
-      },
-    });
-  }
+  /**
+   *
+   * @author: David
+   * @description: Reason: The function is not used in this time.
+   * @description: Date: 2024-09-19
+   */
+  // createCosmosContractCallEvent(event: IBCEvent<ContractCallSubmitted>) {
+  //   console.log('Create Cosmos Contract Call Event with id: ', `${event.args.messageId}`);
 
-  createCosmosContractCallWithTokenEvent(event: IBCEvent<ContractCallWithTokenSubmitted>) {
-    console.log(
-      'Create Cosmos Contract Call With Token Event with id: ',
-      `${event.args.messageId}`
-    );
+  //   return this.prisma.relayData.create({
+  //     data: {
+  //       id: `${event.args.messageId}`,
+  //       from: event.args.sourceChain.toLowerCase(),
+  //       to: event.args.destinationChain.toLowerCase(),
+  //       status: Status.PENDING,
+  //       callContract: {
+  //         create: {
+  //           payload: event.args.payload.toLowerCase(),
+  //           payloadHash: event.args.payloadHash.toLowerCase(),
+  //           contractAddress: event.args.contractAddress.toLowerCase(),
+  //           sourceAddress: event.args.sender.toLowerCase(),
+  //           stakerPublicKey: '', //TODO: Add stakerPublicKey
+  //           logIndex: event.logIndex,
+  //         },
+  //       },
+  //     },
+  //   });
+  // }
 
-    return this.prisma.relayData.create({
-      data: {
-        id: `${event.args.messageId}`,
-        from: event.args.sourceChain.toLowerCase(),
-        to: event.args.destinationChain.toLowerCase(),
-        status: Status.PENDING,
-        callContractWithToken: {
-          create: {
-            payload: event.args.payload.toLowerCase(),
-            payloadHash: event.args.payloadHash.toLowerCase(),
-            contractAddress: event.args.contractAddress.toLowerCase(),
-            sourceAddress: event.args.sender.toLowerCase(),
-            amount: event.args.amount.toString(),
-            symbol: event.args.symbol.toLowerCase(),
-          },
-        },
-      },
-    });
-  }
+  /**
+   *
+   * @author: David
+   * @description: Reason: The function is not used in this time.
+   * @description: Date: 2024-09-19
+   */
+  // createCosmosContractCallWithTokenEvent(event: IBCEvent<ContractCallWithTokenSubmitted>) {
+  //   console.log(
+  //     'Create Cosmos Contract Call With Token Event with id: ',
+  //     `${event.args.messageId}`
+  //   );
+
+  //   return this.prisma.relayData.create({
+  //     data: {
+  //       id: `${event.args.messageId}`,
+  //       from: event.args.sourceChain.toLowerCase(),
+  //       to: event.args.destinationChain.toLowerCase(),
+  //       status: Status.PENDING,
+  //       callContractWithToken: {
+  //         create: {
+  //           payload: event.args.payload.toLowerCase(),
+  //           payloadHash: event.args.payloadHash.toLowerCase(),
+  //           contractAddress: event.args.contractAddress.toLowerCase(),
+  //           sourceAddress: event.args.sender.toLowerCase(),
+  //           amount: event.args.amount.toString(),
+  //           symbol: event.args.symbol.toLowerCase(),
+  //         },
+  //       },
+  //     },
+  //   });
+  // }
+
+  /**
+   *
+   * @author: David
+   * @description: Reason: The function is not used in this time.
+   * @description: Date: 2024-09-19
+   */
+  // createEvmCallContractWithTokenEvent(event: EvmEvent<ContractCallWithTokenEventObject>) {
+  //   const id = `${event.hash}-${event.logIndex}`;
+  //   return this.prisma.relayData.create({
+  //     data: {
+  //       id,
+  //       from: event.sourceChain,
+  //       to: event.destinationChain,
+  //       callContractWithToken: {
+  //         create: {
+  //           blockNumber: event.blockNumber,
+  //           payload: event.args.payload.toLowerCase(),
+  //           payloadHash: event.args.payloadHash.toLowerCase(),
+  //           contractAddress: event.args.destinationContractAddress.toLowerCase(),
+  //           sourceAddress: event.args.sender.toLowerCase(),
+  //           amount: event.args.amount.toString(),
+  //           symbol: event.args.symbol.toLowerCase(),
+  //         },
+  //       },
+  //     },
+  //   });
+  // }
+
+  /**
+   *
+   * @author: David
+   * @description: Reason: The function is not used in this time.
+   * @description: Date: 2024-09-19
+   */
+  // createEvmContractCallApprovedWithMintEvent(
+  //   event: EvmEvent<ContractCallApprovedWithMintEventObject>
+  // ) {
+  //   const id = `${event.hash}-${event.logIndex}`;
+  //   console.log('Create Evm Contract Call Approved With Mint Event with id: ', `${id}`);
+
+  //   return this.prisma.callContractWithTokenApproved.create({
+  //     data: {
+  //       id,
+  //       sourceChain: event.sourceChain,
+  //       destinationChain: event.destinationChain,
+  //       txHash: event.hash,
+  //       blockNumber: event.blockNumber,
+  //       logIndex: event.logIndex,
+  //       commandId: event.args.commandId,
+  //       sourceAddress: event.args.sourceAddress,
+  //       contractAddress: event.args.contractAddress,
+  //       payloadHash: event.args.payloadHash,
+  //       symbol: event.args.symbol,
+  //       amount: event.args.amount.toBigInt(),
+  //       sourceTxHash: event.args.sourceTxHash,
+  //       sourceEventIndex: event.args.sourceEventIndex.toBigInt(),
+  //     },
+  //   });
+  // }
 
   createEvmCallContractEvent(event: EvmEvent<ContractCallEventObject>) {
-    console.log('Create EVM Call Contract Event with id: ', `${event.hash}-${event.logIndex}`);
-
-    const id = `${event.hash}-${event.logIndex}`;
-    return this.prisma.relayData.create({
-      data: {
-        id,
-        from: event.sourceChain,
-        to: event.destinationChain,
-        callContract: {
-          create: {
-            blockNumber: event.blockNumber,
-            payload: event.args.payload.toLowerCase(),
-            payloadHash: event.args.payloadHash.toLowerCase(),
-            contractAddress: event.args.destinationContractAddress.toLowerCase(),
-            sourceAddress: event.args.sender.toLowerCase(),
-            stakerPublicKey: '', //TODO: Add stakerPublicKey
-          },
+    const id = `${event.hash.toLowerCase()}-${event.logIndex}`;
+    const data = {
+      id,
+      from: event.sourceChain,
+      to: event.destinationChain,
+      callContract: {
+        create: {
+          txHash: event.hash.toLowerCase(),
+          blockNumber: event.blockNumber,
+          payload: event.args.payload.toLowerCase(),
+          payloadHash: event.args.payloadHash.toLowerCase(),
+          contractAddress: event.args.destinationContractAddress.toLowerCase(),
+          sourceAddress: event.args.sender.toLowerCase(),
+          stakerPublicKey: '', //TODO: Add stakerPublicKey
+          logIndex: event.logIndex,
         },
       },
-    });
-  }
+    };
 
-  createEvmCallContractWithTokenEvent(event: EvmEvent<ContractCallWithTokenEventObject>) {
-    const id = `${event.hash}-${event.logIndex}`;
+    logger.debug('[DatabaseClient] Create Evm Call Contract Event: ', data);
 
-    console.log('Create EVM Call Contract With Token Event with id: ', id);
     return this.prisma.relayData.create({
-      data: {
-        id,
-        from: event.sourceChain,
-        to: event.destinationChain,
-        callContractWithToken: {
-          create: {
-            blockNumber: event.blockNumber,
-            payload: event.args.payload.toLowerCase(),
-            payloadHash: event.args.payloadHash.toLowerCase(),
-            contractAddress: event.args.destinationContractAddress.toLowerCase(),
-            sourceAddress: event.args.sender.toLowerCase(),
-            amount: event.args.amount.toString(),
-            symbol: event.args.symbol.toLowerCase(),
-          },
-        },
-      },
+      data,
     });
   }
 
   async createEvmContractCallApprovedEvent(event: EvmEvent<ContractCallApprovedEventObject>) {
     const id = `${event.hash}-${event.args.sourceEventIndex}-${event.logIndex}`;
-    logger.debug(`[DatabaseClient] Create EvmContractCallApproved: "${id}"`);
+    const data = {
+      id,
+      sourceChain: event.sourceChain,
+      destinationChain: event.destinationChain,
+      txHash: event.hash.toLowerCase(),
+      blockNumber: event.blockNumber,
+      logIndex: event.logIndex,
+      commandId: event.args.commandId,
+      sourceAddress: event.args.sourceAddress.toLowerCase(),
+      contractAddress: event.args.contractAddress.toLowerCase(),
+      payloadHash: event.args.payloadHash.toLowerCase(),
+      sourceTxHash: event.args.sourceTxHash.toLowerCase(),
+      sourceEventIndex: Number(event.args.sourceEventIndex.toBigInt()),
+    };
+
+    logger.debug('[DatabaseClient] Create EvmContractCallApproved: ', data);
+
     return this.prisma.callContractApproved
       .create({
-        data: {
-          id,
-          sourceChain: event.sourceChain,
-          destinationChain: event.destinationChain,
-          txHash: event.hash,
-          blockNumber: event.blockNumber,
-          logIndex: event.logIndex,
-          commandId: event.args.commandId,
-          sourceAddress: event.args.sourceAddress,
-          contractAddress: event.args.contractAddress,
-          payloadHash: event.args.payloadHash,
-          sourceTxHash: event.args.sourceTxHash,
-          sourceEventIndex: Number(event.args.sourceEventIndex.toBigInt()),
-        },
+        data,
       })
-      .then((result) =>
+      .then((result: any) =>
         logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
       )
-      .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
-  }
-
-  createEvmContractCallApprovedWithMintEvent(
-    event: EvmEvent<ContractCallApprovedWithMintEventObject>
-  ) {
-    const id = `${event.hash}-${event.logIndex}`;
-    console.log('Create Evm Contract Call Approved With Mint Event with id: ', `${id}`);
-
-    return this.prisma.callContractWithTokenApproved.create({
-      data: {
-        id,
-        sourceChain: event.sourceChain,
-        destinationChain: event.destinationChain,
-        txHash: event.hash,
-        blockNumber: event.blockNumber,
-        logIndex: event.logIndex,
-        commandId: event.args.commandId,
-        sourceAddress: event.args.sourceAddress,
-        contractAddress: event.args.contractAddress,
-        payloadHash: event.args.payloadHash,
-        symbol: event.args.symbol,
-        amount: event.args.amount.toBigInt(),
-        sourceTxHash: event.args.sourceTxHash,
-        sourceEventIndex: event.args.sourceEventIndex.toBigInt(),
-      },
-    });
+      .catch((error: any) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
   }
 
   async createEvmExecutedEvent(event: EvmEvent<ExecutedEventObject>) {
@@ -187,33 +217,39 @@ export class DatabaseClient {
           status: Status.SUCCESS,
         },
       })
-      .then((result) =>
+      .then((result: any) =>
         logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
       )
-      .catch((error) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
+      .catch((error: any) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
   }
 
   createBtcCallContractEvent(event: BtcEventTransaction) {
-    const id = `${event.txHash}-${event.logIndex}`;
-    console.log('Create BTC Call Contract Event with id: ', id);
-    return this.prisma.relayData.create({
-      data: {
-        id,
-        from: event.sourceChain,
-        to: event.destinationChain,
-        callContract: {
-          create: {
-            blockNumber: event.blockNumber,
-            payload: event.payload.toLowerCase(),
-            payloadHash: event.payloadHash.toLowerCase(),
-            contractAddress: event.destinationContractAddress.toLowerCase(),
-            sourceAddress: event.sender.toLowerCase(),
-            amount: event.mintingAmount,
-            symbol: '',
-            stakerPublicKey: event.stakerPublicKey,
-          },
+    const id = `${event.txHash.toLowerCase()}-${event.logIndex}`;
+    const relayData = {
+      id,
+      from: event.sourceChain,
+      to: event.destinationChain,
+      callContract: {
+        create: {
+          txHash: event.txHash.toLowerCase(),
+          txHex: Buffer.from(event.vaultTxHex, 'hex'),
+          blockNumber: event.blockNumber,
+          payload: event.payload.toLowerCase(),
+          payloadHash: event.payloadHash.toLowerCase(),
+          contractAddress: event.destinationContractAddress.toLowerCase(),
+          sourceAddress: event.sender.toLowerCase(),
+          amount: event.mintingAmount,
+          symbol: '',
+          stakerPublicKey: event.stakerPublicKey.toLowerCase(),
+          logIndex: event.logIndex,
         },
       },
+    };
+
+    logger.debug(`[DatabaseClient] Create BtcCallContract: ${JSON.stringify(relayData)}`);
+
+    return this.prisma.relayData.create({
+      data: relayData,
     });
   }
   //Todo: 20240829: Redesign function check operator ship for bitcoin
@@ -315,7 +351,7 @@ export class DatabaseClient {
       },
     });
 
-    logger.info(`[handleCosmosToEvmEvent] DBUpdate: ${JSON.stringify(record)}`);
+    logger.info(`[DatabaseClient] [Evm ContractCallApproved]: ${JSON.stringify(record)}`);
   }
 
   async findRelayDataById(
@@ -372,7 +408,7 @@ export class DatabaseClient {
       },
     });
 
-    return datas.map((data) => ({
+    return datas.map((data: any) => ({
       id: data.id,
       payload: data.callContract?.payload,
     }));
@@ -419,7 +455,7 @@ export class DatabaseClient {
       },
     });
 
-    return datas.map((data) => ({
+    return datas.map((data: any) => ({
       id: data.id,
       payload: data.callContractWithToken?.payload,
     }));

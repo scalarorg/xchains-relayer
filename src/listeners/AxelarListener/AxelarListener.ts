@@ -58,7 +58,7 @@ export class AxelarListener {
         logger.debug(`[AxelarListener] Unmatched message: ${ev.data.toString()}`);
         return;
       }
-      logger.debug(`[AxelarListener] Received ${event.type} event`);
+      logger.debug(`[AxelarListener] Received Event: ${JSON.stringify(ev)}`);
 
       // parse the event data
       event

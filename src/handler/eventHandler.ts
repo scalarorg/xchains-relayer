@@ -135,17 +135,23 @@ export async function handleCosmosToEvmEvent<
  * Prepare and call to the ScalarGateway for set some commands are approved
  * and ready to execute by call to the dApp's contract
  */
-export async function handleCosmosApprovedEvent<T extends ContractCallSubmitted | ContractCallWithTokenSubmitted
-  >(event: IBCEvent<T>, vxClient: AxelarClient, db: DatabaseClient, evmClients: EvmClient[], btcClients: BtcClient[]) {
+export async function handleCosmosApprovedEvent<
+  T extends ContractCallSubmitted | ContractCallWithTokenSubmitted
+>(
+  event: IBCEvent<T>,
+  vxClient: AxelarClient,
+  db: DatabaseClient,
+  evmClients: EvmClient[],
+  btcClients: BtcClient[]
+) {
   const chainId = event.args.destinationChain.toLowerCase();
-  logger.debug(`[handleCosmosApprovedEvent] Scalar Event: ${JSON.stringify(event)}`);
+  logger.debug(`[Scalar] Scalar Event: ${JSON.stringify(event)}`);
   // Find the evm client associated with event's destination chain
-  const evmClient = evmClients.find(
-    (client) => client.chainId.toLowerCase() === chainId);
+  const evmClient = evmClients.find((client) => client.chainId.toLowerCase() === chainId);
   if (evmClient) {
     const tx = await handleCosmosToEvmApprovedEvent(vxClient, evmClient, event);
     await db.updateCosmosToEvmEvent(event, tx);
-    return
+    return;
   }
   let btcBroadcastClient, btcSignerClient;
   for (const btcClient of btcClients) {
@@ -173,8 +179,6 @@ export async function handleCosmosToEvmApprovedEvent<
   //   logger.info(`[handleCosmosToEvmApprovedEvent] Confirmed: ${confirmTx.transactionHash}`);
   // }
 
-  logger.debug(`[handleCosmosToEvmApprovedEvent] Scalar Event: ${JSON.stringify(event)}`);
-
   // const routeMessage = await vxClient.routeMessageRequest(
   //   -1,
   //   event.args.messageId,
@@ -187,13 +191,11 @@ export async function handleCosmosToEvmApprovedEvent<
 
   const pendingCommands = await vxClient.getPendingCommands(event.args.destinationChain);
 
-  logger.info(
-    `[handleCosmosToEvmApprovedEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`
-  );
+  logger.info(`[Scalar][CallEvm] PendingCommands: ${JSON.stringify(pendingCommands)}`);
   if (pendingCommands.length === 0) return;
 
   const signCommand = await vxClient.signCommands(event.args.destinationChain);
-  logger.debug(`[handleCosmosToEvmApprovedEvent] SignCommand: ${JSON.stringify(signCommand)}`);
+  logger.debug(`[Scalar][CallEvm] SignCommand: ${JSON.stringify(signCommand)}`);
 
   if (signCommand && signCommand.rawLog?.includes('failed')) {
     throw new Error(signCommand.rawLog);
@@ -203,18 +205,20 @@ export async function handleCosmosToEvmApprovedEvent<
   }
 
   const batchedCommandId = getBatchCommandIdFromSignTx(signCommand);
-  logger.info(`[handleCosmosToEvmApprovedEvent] BatchCommandId: ${batchedCommandId}`);
 
   const executeData = await vxClient.getExecuteDataFromBatchCommands(
     event.args.destinationChain,
     batchedCommandId
   );
   const decodedExecuteData = decodeGatewayExecuteData(executeData);
-  logger.info(`[handleCosmosToEvmApprovedEvent] BatchCommands: ${JSON.stringify(executeData)}`);
-  logger.info(`[handleCosmosToEvmApprovedEvent] DecodedData: ${JSON.stringify(decodedExecuteData)}`);
+
+  logger.info(`[Scalar][CallEvm] BatchCommandId: ${batchedCommandId}`);
+  logger.info(`[Scalar][CallEvm] ExecuteData: ${JSON.stringify(executeData)}`);
+  logger.info(`[Scalar][CallEvm] DecodedExecuteData: ${JSON.stringify(decodedExecuteData)}`);
+
   const tx = await evmClient.gatewayExecute(executeData);
   if (!tx) return;
-  logger.info(`[handleCosmosToEvmApprovedEvent] Execute: ${tx.transactionHash}`);
+  logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
 
   return tx;
 }
@@ -229,10 +233,10 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
   relayDatas: { id: string; payload: string | undefined }[]
 ) {
   const { commandId, contractAddress, sourceAddress, sourceChain, payloadHash } = event.args;
-  
+
   if (!relayDatas || relayDatas.length === 0) {
     logger.info(
-      `[handleCosmosToEvmCallContractCompleteEvent]: Cannot find payload from given payloadHash: ${payloadHash}; commandId: ${commandId}`
+      `[Scalar][Evm Execute]: Cannot find payload from given payloadHash: ${payloadHash}; commandId: ${commandId}`
     );
     return undefined;
   }
@@ -256,16 +260,17 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
         status: Status.SUCCESS,
       });
       logger.info(
-        `[handleCosmosToEvmCallContractCompleteEvent] Already executed txId ${data.id} with commandId ${commandId}. Will mark the status in the DB as Success.`
+        `[Scalar][Evm Execute]: Already executed txId ${data.id} with commandId ${commandId}. Will mark the status in the DB as Success.`
       );
       continue;
     }
-    logger.debug(`[handleCosmosToEvmCallContractCompleteEvent] Execute: 
+    logger.debug(`[Scalar][Evm Execute]: Execute: 
       contractAddress: ${contractAddress}
       commandId: ${commandId}
       sourceChain: ${sourceChain}
       sourceAddress: ${sourceAddress}
       payload: ${payload}`);
+
     const tx = await evmClient.execute(
       contractAddress,
       commandId,
@@ -280,12 +285,12 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
         status: Status.FAILED,
       });
       logger.error(
-        `[handleCosmosToEvmCallContractCompleteEvent] Execute failed: ${id}. Will mark the status in the DB as Failed.`
+        `[Scalar][Evm Execute]: Execute failed: ${id}. Will mark the status in the DB as Failed.`
       );
       continue;
     }
 
-    logger.info(`[handleCosmosToEvmCallContractCompleteEvent] execute: ${JSON.stringify(tx)}`);
+    logger.info(`[Scalar][Evm Execute]: Executed: ${JSON.stringify(tx)}`);
 
     result.push({
       id,
@@ -380,15 +385,15 @@ export async function handleEvmToCosmosCompleteEvent(client: AxelarClient, event
   logger.info(`[handleEvmToCosmosCompleteEvent] Memo: ${event.memo}`);
 }
 
-export async function prepareHandler(event: any, db: DatabaseClient, label = '') {
+export async function prepareHandler(event: any, label = '') {
+  logger.info(`[${label}] Event: ${JSON.stringify(event)}`);
   // reconnect prisma db
-  try {
-    await db.connect();
-     // log event
-    logger.info(`[${label}] EventReceived ${JSON.stringify(event)}`);
-  } catch (e) {
-    logger.error(`[${label}] Failed to connect to the database: ${e}`);
-  }
+  // try {
+  //   // await db.connect();
+  //    // log event
+  // } catch (e) {
+  //   logger.error(`[${label}] Failed to connect to the database: ${e}`);
+  // }
 }
 
 const getPacketSequenceFromExecuteTx = (executeTx: any) => {
