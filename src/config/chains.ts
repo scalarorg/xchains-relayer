@@ -60,7 +60,7 @@ getConfig();
 const { axelar, btc, cosmos, evm, rabbitmq } = getConfig();
 
 function getEvmPrivateKey(network: string): string {
-  const filePath = `${env.CONFIG_DIR}/${network}/config.json`;
+  const filePath = `${env.CONFIG_CHAINS}/${network}/config.json`;
   const data = fs.readFileSync(filePath, 'utf8');
   const networkConfig = JSON.parse(data);
   let privateKey = env.EVM_PRIVATE_KEY;
