@@ -1,19 +1,42 @@
 import { Network, Psbt, networks } from 'bitcoinjs-lib';
-import {ECPairFactory, ECPairAPI, TinySecp256k1Interface } from 'ecpair';
+import { ECPairAPI, ECPairFactory, TinySecp256k1Interface } from 'ecpair';
 
-// You need to provide the ECC library. The ECC library must implement 
+// You need to provide the ECC library. The ECC library must implement
 // all the methods of the `TinySecp256k1Interface` interface.
-const tinysecp: TinySecp256k1Interface = require('tiny-secp256k1');
+let ECPair: ECPairAPI;
 
-const ECPair: ECPairAPI = ECPairFactory(tinysecp);
+(async () => {
+  const tinysecp: TinySecp256k1Interface = await import('tiny-secp256k1');
+  ECPair = ECPairFactory(tinysecp);
+})();
 
 // @param psbtb64: the transaction to sign in base64 format
 // @param serviceAddress: the address of the service
 // @param privKey: the private key of the service
 // @returns the signed transaction from psbtb64
-export async function signPsbt(psbtb64: string, serviceAddress: string, privKey: string): Promise<string> {
+export async function signPsbt(
+  psbtb64: string,
+  serviceAddress: string,
+  privKey: string
+): Promise<string> {
+  let network = null;
   try {
-    const [addressType, network] = getAddressType(serviceAddress);
+    network = getAddressType(serviceAddress)[1];
+  } catch (e) {
+    if (
+      serviceAddress.startsWith('bcrt1q') ||
+      serviceAddress.startsWith('bcrt1p') ||
+      serviceAddress.startsWith('m') ||
+      serviceAddress.startsWith('m') ||
+      serviceAddress.startsWith('3')
+    ) {
+      network = networks.regtest;
+    } else {
+      throw new Error(`Failed to get network: ${e}`);
+    }
+  }
+
+  try {
     const service_keyPair = ECPair.fromWIF(privKey, network);
     const psbt = Psbt.fromBase64(psbtb64, { network });
 

@@ -1,6 +1,9 @@
 import { decodeGatewayExecuteData } from '../utils/evm';
 import { AxelarClient, BtcClient, DatabaseClient, EvmClient } from '..';
 import { logger } from '../logger';
+
+import * as bitcoinjs from 'bitcoinjs-lib';
+
 import {
   ContractCallSubmitted,
   ContractCallWithTokenSubmitted,
@@ -17,6 +20,7 @@ import {
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { handleCosmosToBTCApprovedEvent } from './eventBTCHandler';
+import { Transaction } from 'bitcoinjs-lib';
 
 const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -144,32 +148,55 @@ export async function handleCosmosApprovedEvent<
   evmClients: EvmClient[],
   btcClients: BtcClient[]
 ) {
-  const chainId = event.args.destinationChain.toLowerCase();
+  const id = event.args.destinationChain.toLowerCase();
   logger.debug(`[Scalar] Scalar Event: ${JSON.stringify(event)}`);
   // Find the evm client associated with event's destination chain
-  const evmClient = evmClients.find((client) => client.chainId.toLowerCase() === chainId);
+  const evmClient = evmClients.find((client) => client.chainId.toLowerCase() === id);
   if (evmClient) {
     const tx = await handleCosmosToEvmApprovedEvent(vxClient, evmClient, event);
     await db.updateCosmosToEvmEvent(event, tx);
     return;
   }
-  let btcBroadcastClient, btcSignerClient;
-  for (const btcClient of btcClients) {
-    if (btcClient.config.chainId.toLowerCase() === chainId) {
-      if (btcClient.isSigner()) {
-        btcSignerClient = btcClient;
-      } else if (btcClient.isBroadcast()) {
-        btcBroadcastClient = btcClient;
-      }
-    }
-  }
+
+  const btcBroadcastClient = btcClients.find((btc) => btc.config.id === id && btc.isBroadcast());
+
+  const btcSignerClient = btcClients.find((btc) => btc.config.id === id && btc.isSigner());
+
   if (btcBroadcastClient && btcSignerClient) {
-    await handleCosmosToBTCApprovedEvent(vxClient, btcBroadcastClient, btcSignerClient, db, event);
-    //await db.updateCosmosToBTCEvent(event, tx);
-    //Todo: update db
+    const result = await handleCosmosToBTCApprovedEvent(
+      vxClient,
+      btcBroadcastClient,
+      btcSignerClient,
+      db,
+      event
+    );
+
+    const executedResult = await result?.executedResult;
+    if (!executedResult) {
+      logger.error(`[handleCosmosApprovedEvent] Failed to execute BTC Tx: ${executedResult}`);
+      return;
+    }
+
+    const batchedCommandId = result?.batchedCommandId;
+
+    logger.info(`[BTC Tx Executed] BTC Tx: ${executedResult?.tx}`);
+
+    const info = await btcBroadcastClient.getTransaction(executedResult?.tx);
+
+    const refPsbtBase64 = executedResult.psbtBase64;
+
+    const psbtFromBase64 = bitcoinjs.Psbt.fromBase64(refPsbtBase64);
+    const txInputHash = psbtFromBase64.txInputs[0].hash.reverse().toString('hex');
+    // this line isn't necessary but it lets us know that the variable is a hash with 0x prefix
+    const refTxHash = txInputHash.startsWith('0x') ? txInputHash : `0x${txInputHash}`;
+
+    // CAUTION: Wrong flow, the problem is that the tx is broadcasted and update the status is success, the Right flow is Xchains-core need to approve then update status is approve then execute then update status is success
+    await db.handleMultipleEvmToBtcEventsTx(event, info, refTxHash, batchedCommandId);
+
+    logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(info)}`);
     return;
   }
-  logger.error(`[handleCosmosApprovedEvent] No client found for chainId: ${chainId}`);
+  logger.error(`[handleCosmosApprovedEvent] No client found for chainId: ${id}`);
 }
 export async function handleCosmosToEvmApprovedEvent<
   T extends ContractCallSubmitted | ContractCallWithTokenSubmitted
@@ -217,7 +244,10 @@ export async function handleCosmosToEvmApprovedEvent<
   logger.info(`[Scalar][CallEvm] DecodedExecuteData: ${JSON.stringify(decodedExecuteData)}`);
 
   const tx = await evmClient.gatewayExecute(executeData);
-  if (!tx) return;
+
+  if (!tx) {
+    logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
+  }
   logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
 
   return tx;
@@ -264,7 +294,7 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
       );
       continue;
     }
-    logger.debug(`[Scalar][Evm Execute]: Execute: 
+    logger.debug(`[Scalar][Prepare to Execute]: Execute: 
       contractAddress: ${contractAddress}
       commandId: ${commandId}
       sourceChain: ${sourceChain}

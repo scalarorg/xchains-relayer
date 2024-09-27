@@ -29,8 +29,13 @@ const getConfig = () => {
   const axelarConfig = fs.readFileSync(`${dir}/axelar.json`, 'utf8');
   const axelarConfigJson = JSON.parse(axelarConfig) as AxelarConfig;
 
-  const btcConfig = fs.readFileSync(`${dir}/btc.json`, 'utf8');
-  const btcConfigJson = JSON.parse(btcConfig) as BtcNetworkConfig[];
+  const btcBroadcastConfig = fs.readFileSync(`${dir}/btc.json`, 'utf8');
+  const btcBroadcastConfigJson = JSON.parse(btcBroadcastConfig) as BtcNetworkConfig[];
+
+  const btcSignerConfig = fs.readFileSync(`${dir}/btc-signer.json`, 'utf8');
+  const btcSignerConfigJson = JSON.parse(btcSignerConfig) as BtcNetworkConfig[];
+
+  const btcConfig = [...btcBroadcastConfigJson, ...btcSignerConfigJson];
 
   const cosmosConfig = fs.readFileSync(`${dir}/cosmos.json`, 'utf8');
   const cosmosConfigJson = JSON.parse(cosmosConfig) as CosmosNetworkConfig[];
@@ -41,14 +46,14 @@ const getConfig = () => {
   const rabbitmqConfig = fs.readFileSync(`${dir}/rabbitmq.json`, 'utf8');
   const rabbitmqConfigJson = JSON.parse(rabbitmqConfig) as RabbitMQConfig[];
   logger.debug(`[getConfig] axelarConfigJson: ${JSON.stringify(axelarConfigJson)}`);
-  logger.debug(`[getConfig] btcConfigJson: ${JSON.stringify(btcConfigJson)}`);
+  logger.debug(`[getConfig] btcConfigJson: ${JSON.stringify(btcConfig)}`);
   logger.debug(`[getConfig] cosmosConfigJson: ${JSON.stringify(cosmosConfigJson)}`);
   logger.debug(`[getConfig] evmConfigJson: ${JSON.stringify(evmConfigJson)}`);
   logger.debug(`[getConfig] rabbitmqConfigJson: ${JSON.stringify(rabbitmqConfigJson)}`);
 
   return {
     axelar: axelarConfigJson,
-    btc: btcConfigJson,
+    btc: btcConfig,
     cosmos: cosmosConfigJson,
     evm: evmConfigJson,
     rabbitmq: rabbitmqConfigJson,

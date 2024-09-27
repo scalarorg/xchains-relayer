@@ -8,6 +8,7 @@ import {
   // handleEvmToCosmosEvent,
   handleCosmosToEvmCallContractCompleteEvent,
   handleEvmToCosmosConfirmEvent,
+  handleEvmToCosmosEvent,
   prepareHandler,
 } from '../handler';
 import {
@@ -19,14 +20,15 @@ import {
   // AxelarIBCCompleteEvent,
   AxelarListener,
   EvmContractCallApprovedEvent,
+  EvmContractCallEvent,
   EvmExecutedEvent,
   EvmListener,
 } from '../listeners';
 import { logger } from '../logger';
-import { ContractCallSubmitted, ExecuteRequest } from '../types';
+import { ContractCallSubmitted, EvmEvent, ExecuteRequest } from '../types';
 import {
   ContractCallApprovedEventObject,
-  // ContractCallEventObject,
+  ContractCallEventObject,
   ExecutedEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { createCosmosEventSubject, createEvmEventSubject } from './subject';
@@ -35,10 +37,10 @@ import { startRabbitMQRelayer } from './rabbitmq';
 import { mapEventToEvmClient } from './rxOperators';
 
 // import { transferOperatorship } from '../transferOperatorship';
-// const sEvmCallContract = createEvmEventSubject<ContractCallEventObject>();
 // const sEvmCallContractWithToken = createEvmEventSubject<ContractCallWithTokenEventObject>();
 // const sEvmApproveContractCallWithToken =
 //   createEvmEventSubject<ContractCallApprovedWithMintEventObject>();
+const sEvmCallContract = createEvmEventSubject<ContractCallEventObject>();
 const sEvmApproveContractCall = createEvmEventSubject<ContractCallApprovedEventObject>();
 const sEvmExecuted = createEvmEventSubject<ExecutedEventObject>();
 const sCosmosContractApprovedCall = createCosmosEventSubject<ContractCallSubmitted>();
@@ -99,21 +101,20 @@ const setupEvmListeners = (axelarClient: AxelarClient, evmClients: EvmClient[]) 
       .catch((e) => handleAnyError(db, 'handleEvmToCosmosConfirmEvent', e));
   });
 
-  // sEvmCallContract
-  //   // Filter the event by the supported cosmos chains. This is to avoid conflict with existing relayers that relay to evm chains.
-  //   .pipe(filterCosmosDestination(cosmosChains))
-  //   .subscribe((event) => {
-  //     const ev = event as EvmEvent<ContractCallEventObject>;
-  //     prepareHandler(event, 'handleEvmToCosmosEvent')
-  //       // Create the event in the database
-  //       .then(() => db.createEvmCallContractEvent(ev))
-  //       // Wait for the event to be finalized
-  //       .then(() => ev.waitForFinality())
-  //       // Handle the event by sending the confirm tx to the axelar network
-  //       .then(() => handleEvmToCosmosEvent(axelarClient, ev))
-  //       // catch any error
-  //       .catch((e) => handleAnyError(db, 'handleEvmToCosmosEvent', e));
-  //   });
+  sEvmCallContract
+    // Filter the event by the supported cosmos chains. This is to avoid conflict with existing relayers that relay to evm chains.
+    .subscribe((event) => {
+      const ev = event as EvmEvent<ContractCallEventObject>;
+      prepareHandler(event, '[Evm][ContractCall]')
+        // Create the event in the database
+        .then(() => db.createEvmCallContractEvent(ev))
+        // Wait for the event to be finalized
+        .then(() => ev.waitForFinality())
+        // Handle the event by sending the confirm tx to the axelar network
+        .then(() => handleEvmToCosmosEvent(axelarClient, ev))
+        // catch any error
+        .catch((e) => handleAnyError(db, 'handleEvmToCosmosEvent', e));
+    });
 
   /** DIRECTION: BTC -> Evm */
 
@@ -152,6 +153,9 @@ const setupEvmListeners = (axelarClient: AxelarClient, evmClients: EvmClient[]) 
         .then(() => db.findCosmosToEvmCallContractApproved(event))
         // Handle the event by calling execute function at the destination contract.
         .then((relayDatas) => {
+          logger.debug(
+            `[Evm][ContractCallApproved] RelayData In DB: ${JSON.stringify(relayDatas)}`
+          );
           if (env.CHAIN_ENV === 'devnet' || env.CHAIN_ENV === 'testnet' || relayDatas?.length > 0) {
             // Create the event in the database for scanner
             db.createEvmContractCallApprovedEvent(event);
@@ -187,7 +191,9 @@ const setupEvmListeners = (axelarClient: AxelarClient, evmClients: EvmClient[]) 
         // Find the array of relay data associated with the event from the database by payload hash
         .then(() => db.createEvmExecutedEvent(event))
         // Update the event status in the database
-        .then((results) => logger.debug(`[Evm][Executed] Updated event status: ${results}`))
+        .then((results) =>
+          logger.debug(`[Evm][Executed] Updated event status: ${JSON.stringify(results)}`)
+        )
         .catch((e) => handleAnyError(db, 'handleEvmExecutedEvent', e));
     });
 };
@@ -203,7 +209,7 @@ const runEvmListeners = (evmListeners: EvmListener[]) => {
        */
       // evmListener.listen(EvmContractCallWithTokenEvent, sEvmCallContractWithToken);
       // evmListener.listen(EvmContractCallWithTokenApprovedEvent, sEvmApproveContractCallWithToken);
-      // evmListener.listen(EvmContractCallEvent, sEvmCallContract);
+      evmListener.listen(EvmContractCallEvent, sEvmCallContract);
       evmListener.listen(EvmContractCallApprovedEvent, sEvmApproveContractCall);
       evmListener.listen(EvmExecutedEvent, sEvmExecuted);
     } catch (e) {
@@ -265,7 +271,6 @@ const setupCosmosListeners = (
       // .then(() => db.createCosmosContractCallEvent(event))
       // Handle the event by sending a bunch of txs to axelar network
       .then(() => handleCosmosApprovedEvent(event, axelarClient, db, evmClients, btcClients))
-      // catch any error
       .catch((e) => handleAnyError(db, 'handleCosmosToEvmApprovedEvent', e));
   });
 };
