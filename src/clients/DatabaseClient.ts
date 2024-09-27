@@ -3,6 +3,7 @@ import { BigNumber, ethers } from 'ethers';
 import { logger } from '../logger';
 import {
   BtcEventTransaction,
+  BtcTransactionReceipt,
   ContractCallSubmitted,
   ContractCallWithTokenSubmitted,
   EvmEvent,
@@ -155,11 +156,11 @@ export class DatabaseClient {
         create: {
           txHash: event.hash.toLowerCase(),
           blockNumber: event.blockNumber,
-          payload: event.args.payload.toLowerCase(),
+          payload: Buffer.from(event.args.payload.replace('0x', ''), 'hex'),
           payloadHash: event.args.payloadHash.toLowerCase(),
           contractAddress: event.args.destinationContractAddress.toLowerCase(),
           sourceAddress: event.args.sender.toLowerCase(),
-          stakerPublicKey: '', //TODO: Add stakerPublicKey
+          senderAddress: event.args.sender,
           logIndex: event.logIndex,
         },
       },
@@ -215,6 +216,8 @@ export class DatabaseClient {
           logIndex: event.logIndex,
           commandId: event.args.commandId,
           status: Status.SUCCESS,
+          // amount: '',
+          // referenceTxHash: '',
         },
       })
       .then((result: any) =>
@@ -225,6 +228,9 @@ export class DatabaseClient {
 
   createBtcCallContractEvent(event: BtcEventTransaction) {
     const id = `${event.txHash.toLowerCase()}-${event.logIndex}`;
+    // logger.debug(`[DatabaseClient] Create BtcCallContract - event: `, event);
+    const payloadBytes = Buffer.from(event.payload.replace('0x', ''), 'hex');
+
     const relayData = {
       id,
       from: event.sourceChain,
@@ -234,7 +240,7 @@ export class DatabaseClient {
           txHash: event.txHash.toLowerCase(),
           txHex: Buffer.from(event.vaultTxHex, 'hex'),
           blockNumber: event.blockNumber,
-          payload: event.payload.toLowerCase(),
+          payload: payloadBytes,
           payloadHash: event.payloadHash.toLowerCase(),
           contractAddress: event.destinationContractAddress.toLowerCase(),
           sourceAddress: event.sender.toLowerCase(),
@@ -252,6 +258,66 @@ export class DatabaseClient {
       data: relayData,
     });
   }
+
+  // async createBtcContractCallApprovedEvent(
+  //   event: IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>,
+  //   tx: BtcTransactionReceipt,
+  //   batchedCommandId: any
+  // ) {
+  //   const data = {
+  //     id: event.args.messageId,
+  //     sourceChain: event.args.sourceChain,
+  //     destinationChain: event.args.destinationChain,
+  //     txHash: event.hash.toLowerCase(),
+  //     blockNumber: tx?.blockheight || 0,
+  //     logIndex: tx?.blockindex || 0,
+  //     commandId: batchedCommandId,
+  //     sourceAddress: event.args.sender, //smart contract address
+  //     contractAddress: event.args.contractAddress.toLowerCase(), // btc contract address, default is 0x000000...
+  //     payloadHash: event.args.payloadHash.toLowerCase(),
+  //     sourceTxHash: event.hash.toLowerCase(),
+  //     sourceEventIndex: Number(event.args.messageId.split('-')[1]),
+  //   };
+
+  //   logger.debug('[DatabaseClient] Create EvmContractCallApproved: ', data);
+
+  //   return this.prisma.callContractApproved
+  //     .create({
+  //       data,
+  //     })
+  //     .then((result: any) =>
+  //       logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
+  //     )
+  //     .catch((error: any) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`));
+  // }
+
+  // async createBtcExecutedEvent(
+  //   event: IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>,
+  //   tx: BtcTransactionReceipt,
+  //   batchedCommandId: string
+  // ) {
+  //   return (
+  //     this.prisma.commandExecuted
+  //       //TODO: 20240925: Redesign function create btc executed event
+  //       .create({
+  //         data: {
+  //           id: event.args.messageId,
+  //           sourceChain: event.args.sourceChain,
+  //           destinationChain: event.args.destinationChain,
+  //           txHash: tx?.txid.toLowerCase() || '',
+  //           blockNumber: tx?.blockheight || 0,
+  //           logIndex: tx?.blockindex || 0,
+  //           commandId: batchedCommandId,
+  //           status: Status.SUCCESS,
+  //         },
+  //       })
+  //       .then((result: any) =>
+  //         logger.debug(`[DatabaseClient] Create DB result: "${JSON.stringify(result)}"`)
+  //       )
+  //       .catch((error: any) => logger.error(`[DatabaseClient] Create DB with error: "${error}"`))
+  //   );
+  // }
+
   //Todo: 20240829: Redesign function check operator ship for bitcoin
   async createOperatorEpoch(params: string) {
     const [newOperators, newWeights, newThreshold] = ethers.utils.defaultAbiCoder.decode(
@@ -352,6 +418,73 @@ export class DatabaseClient {
     });
 
     logger.info(`[DatabaseClient] [Evm ContractCallApproved]: ${JSON.stringify(record)}`);
+  }
+
+  async handleMultipleEvmToBtcEventsTx(
+    event: IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>,
+    tx: BtcTransactionReceipt,
+    refTxHash: string,
+    batchedCommandId: string
+  ) {
+    if (!tx) return;
+
+    // handle BTC ContractCallApproved in the Tx
+
+    const contractCallData = {
+      executeHash: tx.txid.toLowerCase(),
+      status: Status.SUCCESS,
+    };
+
+    const contractCallApprovedData = {
+      id: event.args.messageId,
+      sourceChain: event.args.sourceChain,
+      destinationChain: event.args.destinationChain,
+      txHash: event.hash.toLowerCase(),
+      blockNumber: tx?.blockheight || 0,
+      logIndex: tx?.blockindex || 0,
+      commandId: batchedCommandId,
+      sourceAddress: event.args.sender, //smart contract address
+      contractAddress: event.args.contractAddress.toLowerCase(), // btc contract address, default is 0x000000...
+      payloadHash: event.args.payloadHash.toLowerCase(),
+      sourceTxHash: event.hash.toLowerCase(),
+      sourceEventIndex: Number(event.args.messageId.split('-')[1]),
+    };
+
+    const executedData = {
+      id: event.args.messageId,
+      sourceChain: event.args.sourceChain,
+      destinationChain: event.args.destinationChain,
+      txHash: tx?.txid.toLowerCase() || '',
+      blockNumber: tx?.blockheight || 0,
+      logIndex: tx?.blockindex || 0,
+      commandId: batchedCommandId,
+      status: Status.SUCCESS,
+      referenceTxHash: refTxHash,
+      amount: tx.amount.toString(),
+    };
+
+    try {
+      const transaction = await this.prisma.$transaction([
+        this.prisma.relayData.update({
+          where: {
+            id: event.args.messageId,
+          },
+          data: contractCallData,
+        }),
+        this.prisma.callContractApproved.create({
+          data: contractCallApprovedData,
+        }),
+        this.prisma.commandExecuted.create({
+          data: executedData,
+        }),
+      ]);
+
+      logger.info(
+        `[DatabaseClient] [handleMultipleEvmToBtcEventsTx]: ${JSON.stringify(transaction)}`
+      );
+    } catch (error) {
+      logger.error(`[DatabaseClient] [handleMultipleEvmToBtcEventsTx]: ${error}`);
+    }
   }
 
   async findRelayDataById(
@@ -488,15 +621,20 @@ export class DatabaseClient {
     logger.info(`[DBUpdate] ${JSON.stringify(executeDb)}`);
   }
 
-  async getBurningTx(payloadHash: string[]): Promise<string> {
-    const burningTx = await this.prisma.callContract.findFirst({
+  async getBurningTx(payloadHash: string): Promise<string> {
+    logger.debug(`[DatabaseClient] Get Burning Tx with payloadHash: ${payloadHash}`);
+    const burningTx = await this.prisma.callContract.findUnique({
       where: {
-        payloadHash: {
-          in: payloadHash,
-        },
+        payloadHash: payloadHash.toLowerCase(),
       },
     });
-    return burningTx!.payload;
+
+    const payloadHexString = burningTx?.payload?.toString('hex');
+    if (!payloadHexString) {
+      throw new Error('PayloadNotFound');
+    }
+
+    return payloadHexString;
   }
 
   connect() {

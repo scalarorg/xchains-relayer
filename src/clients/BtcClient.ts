@@ -15,7 +15,9 @@ export class BtcClient {
       host: config.host,
       username: config.user,
       password: config.password,
+      wallet: 'legacy',
     });
+
     // this.wallet = new Wallet(
     // chain.privateKey,
     // new ethers.providers.JsonRpcProvider(chain.rpcUrl)
@@ -61,12 +63,36 @@ export class BtcClient {
     }
   }
 
+  private async unlockWallet(passphrase: string, timeout: number): Promise<void> {
+    try {
+      await this.client.command('walletpassphrase', passphrase, timeout);
+    } catch (e) {
+      logger.error('[unlockWallet] Failed to unlock wallet: ', e);
+      throw e;
+    }
+  }
+
+  public async getTransaction(txId: string): Promise<any> {
+    try {
+      const response = await this.client.command('gettransaction', txId);
+      return response;
+    } catch (e) {
+      logger.error('[getTxInfo] Failed to getTxInfo: ', e);
+      throw e;
+    }
+  }
+
   /*
    * Dump private key from wallet - WIF format
    */
   public async getPrivKeyFromLegacyWallet(address: string): Promise<any> {
     try {
+      await this.unlockWallet('passphrase', 60);
+
+      logger.info(`[getPrivKeyFromLegacyWallet] Dumping private key for address: ${address}`);
+
       const response = await this.client.command('dumpprivkey', address);
+
       return response;
     } catch (e) {
       logger.error('[getPrivKeyFromLegacyWallet] Failed to getPrivKeyFromLegacyWallet: ', e);

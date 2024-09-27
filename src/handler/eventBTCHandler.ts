@@ -1,9 +1,8 @@
-import { processBurningTxs } from '../services/dApp';
+import { BigNumber, ethers } from 'ethers';
 import { AxelarClient, BtcClient, DatabaseClient } from '..';
 import { logger } from '../logger';
+import { processBurningTxs } from '../services/dApp';
 import { ContractCallSubmitted, ContractCallWithTokenSubmitted, IBCEvent } from '../types';
-import { validateProof } from './authHandler';
-import { BigNumber, ethers } from 'ethers';
 
 const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -24,8 +23,8 @@ export async function handleCosmosToBTCApprovedEvent<
   db: DatabaseClient,
   event: IBCEvent<T>
 ) {
+  logger.debug(`[handleCosmosToBTCApprovedEvent] Event: ${JSON.stringify(event)}`);
   const pendingCommands = await vxClient.getPendingCommands(event.args.destinationChain);
-
   logger.info(
     `[handleCosmosToBTCApprovedEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`
   );
@@ -50,7 +49,10 @@ export async function handleCosmosToBTCApprovedEvent<
   );
 
   logger.info(`[handleCosmosToBTCApprovedEvent] BatchCommands: ${JSON.stringify(executeData)}`);
-  handleBTCExecute(broadcastClient, signerClient, db, executeData);
+  return {
+    executedResult: handleBTCExecute(broadcastClient, signerClient, db, executeData),
+    batchedCommandId,
+  };
 }
 
 const handleBTCExecute = async (
@@ -64,7 +66,7 @@ const handleBTCExecute = async (
   const executeDataDecoded = executeInterface.decodeFunctionData('execute', executeData);
 
   const input = executeDataDecoded.input;
-  await execute(btcBroadcastClient, btcSignerClient, db, input);
+  return execute(btcBroadcastClient, btcSignerClient, db, input);
 };
 
 const execute = async (
@@ -74,6 +76,7 @@ const execute = async (
   input: string
 ) => {
   logger.info('[execute] ExecuteInit');
+  logger.info('[execute] Input', input);
 
   // Decode the input
   const [data, proof] = ethers.utils.defaultAbiCoder.decode(['bytes', 'bytes'], input);
@@ -83,9 +86,12 @@ const execute = async (
   const dataHash = ethers.utils.keccak256(data);
   const messageHash = ethers.utils.hashMessage(ethers.utils.arrayify(dataHash));
 
+  logger.info('[execute] MessageHash', messageHash);
+
   // Validate proof with BTC auth module
-  const allowOperatorshipTransfer = await validateProof(messageHash, proof);
-  logger.info('[execute] ProofValidated', allowOperatorshipTransfer);
+  //FIXME: need to validate bitcoin on-chain
+  // const allowOperatorshipTransfer = await validateProof(messageHash, proof);
+  // logger.info('[execute] ProofValidated', allowOperatorshipTransfer);
   // Decode data
   const [chainId, commandIds, commands, params] = ethers.utils.defaultAbiCoder.decode(
     ['uint256', 'bytes32[]', 'string[]', 'bytes[]'],
@@ -122,16 +128,29 @@ const execute = async (
       sourceTxHash,
       sourceEventIndex,
     ] = paramsDecoded;
+
+    logger.debug('[execute btc tx] Params Decoded: ', paramsDecoded);
+    logger.debug('[execute btc tx] Payload Hash: ', payloadHash);
+
+    //TODO: need to join the CommandExecuted Table to check if the command is already executed or not
     const burningPsbtEncode = await db.getBurningTx(payloadHash);
     if (!burningPsbtEncode) {
       throw new Error('BurningPsbtNotFound');
     }
+    logger.debug('[execute btc tx] Burning Psbt Encoded: ', burningPsbtEncode);
     // decode from ETH to BTC
-    const burningPsbtDecode = ethers.utils.defaultAbiCoder.decode(['string'], burningPsbtEncode);
-    await processBurningTxs(btcSignerClient, btcBroadcastClient, burningPsbtDecode[0]);
+    const burningPsbtDecode = ethers.utils.defaultAbiCoder.decode(
+      ['string'],
+      // this line isn't necessary but it's a good practice to ensure the string is prefixed with '0x'
+      burningPsbtEncode.startsWith('0x') ? burningPsbtEncode : '0x' + burningPsbtEncode
+    );
+    logger.debug('[execute btc tx] Burning Psbt Decoded: ', burningPsbtDecode);
+    const data = await processBurningTxs(btcSignerClient, btcBroadcastClient, burningPsbtDecode[0]);
+    console.log({ psbt: burningPsbtDecode[0] as string });
     logger.info('[execute] Successfully process burning psbt: ', burningPsbtDecode[0]);
-    // TODO: Implement mark command as executed
     //     // Mark the command as executed
+
+    // TODO: Implement mark command as executed
     //     await _setCommandExecuted(contract, commandId, true);
     //     console.log('SetCommandSelectorSuccess');
 
@@ -147,6 +166,11 @@ const execute = async (
     //     }
     //   }
     //  logger.info('[execute] mark command as executed');
+
+    return {
+      tx: data,
+      psbtBase64: burningPsbtDecode[0] as string,
+    };
   }
 };
 

@@ -33,13 +33,25 @@ export function createBtcEventTransaction(
   sourceChain: string,
   btcTransaction: BtcTransaction
 ): BtcEventTransaction {
+  logger.debug(`[RabbitMQ][BTC Event Parser]: ${JSON.stringify(btcTransaction)}`);
+
   const toAddress = base64ToHex(btcTransaction.chain_id_user_address);
   const amount_decode = base64ToDecimal(btcTransaction.amount_minting);
   const chainId = base64ToDecimal(btcTransaction.chain_id);
   const amount = ethers.utils.parseUnits(amount_decode, 0);
+  const blockTime = ethers.utils.parseUnits(btcTransaction.staking_start_timestamp.toString(), 0);
 
-  const payload = ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [toAddress, amount]);
+  const payload = ethers.utils.defaultAbiCoder.encode(
+    ['address', 'uint256', 'uint64'],
+    [toAddress, amount, blockTime]
+  );
+
+  logger.debug(`[RabbitMQ][BTC Event Parser]: payload: ${payload}`);
+
   const payloadHash = ethers.utils.keccak256(payload);
+
+  logger.debug(`[RabbitMQ][BTC Event Parser]: payloadHash: ${payloadHash}`);
+
   const destinationChain = getChainNameById(chainId);
   if (destinationChain === undefined) {
     throw new Error(`[RabbitMQ][BTC Event Parser]: destination chain not found: ${chainId}`);
@@ -48,7 +60,7 @@ export function createBtcEventTransaction(
   const btcEvent: BtcEventTransaction = {
     txHash: `0x${btcTransaction.vault_tx_hash_hex.toLowerCase()}`,
     logIndex: 0,
-    blockNumber: 0,
+    blockNumber: Number(btcTransaction.staking_start_height),
     mintingAmount: Number(amount).toString(),
     sender: base64ToHex(btcTransaction.chain_id_user_address),
     sourceChain,
@@ -77,8 +89,12 @@ export async function handleMessage(
   channel: amqp.Channel,
   msg: amqp.Message | null
 ) {
+  logger.debug(`[RabbitMQ] Received message: ${msg}`);
+
   if (msg?.content) {
     try {
+      logger.debug(`[RabbitMQ] Received BTC Event: ${msg.content.toString()}`);
+
       const btcTransaction: BtcTransaction = JSON.parse(msg.content.toString());
       // -util. util for stop consume at specific height
       if (
@@ -100,14 +116,11 @@ export async function handleMessage(
 
       logger.debug(`[RabbitMQ] Received BTC Event: ${JSON.stringify(btcEvent)}`);
 
-      try {
-        // 1. Connect to the database
-        await db.connect();
-        // 2. Create the event in the database
-        await db.createBtcCallContractEvent(btcEvent);
-      } catch (e) {
-        logger.error('Failed to create btc event in the database:', e);
-      }
+      // 1. Connect to the database
+      await db.connect();
+      // 2. Create the event in the database
+      await db.createBtcCallContractEvent(btcEvent);
+
       // 3. Wait for the event to be finalized - get enough confirmations
       // await ev.waitForFinality();
       // 4. Handle the event by sending the confirm tx to the axelar network
@@ -140,9 +153,7 @@ export async function handleBtcEvent(
 
     channel.ack(msg);
   } else {
-    logger.error(
-      `[RabbitMQ][Scalar]: Failed to confirm BTC Event: tx_hash: ${content.txHash}`
-    );
+    logger.error(`[RabbitMQ][Scalar]: Failed to confirm BTC Event: tx_hash: ${content.txHash}`);
     channel.nack(msg, false, false);
   }
 }

@@ -43,14 +43,16 @@ model CallContract {
   contractAddress       String    @db.VarChar(255)
   amount                String?    @db.VarChar(255)
   symbol                String?    @db.VarChar(255)
-  payload               String
+  payload               Bytes?
   payloadHash           String    @db.VarChar(255)
   sourceAddress         String    @db.VarChar(255)
-  stakerPublicKey       String    @db.VarChar(255) // Hex 32 bytes
+  stakerPublicKey       String?    @db.VarChar(255) // Hex 32 bytes for locking flow
+  senderAddress        String?    @db.VarChar(255) // Hex 20 bytes for unlocking flow or any chains different from btc
   createdAt             DateTime  @default(now()) @db.Timestamp(6)
   updatedAt             DateTime  @default(now()) @db.Timestamp(6)
   callContractApproved  CallContractApproved? 
   RelayData             RelayData @relation(fields: [id], references: [id])
+  @@unique([payloadHash])
 }
 
 model CallContractApproved {
@@ -99,6 +101,8 @@ model CommandExecuted {
   logIndex              Int     
   commandId             String
   status                Int       @default(0)
+  referenceTxHash       String?    @db.VarChar(255)
+  amount                String?    @db.VarChar(255)
 }
 model Operatorship {
   id   Int    @id @default(autoincrement())

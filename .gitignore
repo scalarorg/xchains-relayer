@@ -7,3 +7,7 @@ src/types/contracts
 secret.json
 unused
 chains
+
+data/local
+data/devnet
+data/testnet

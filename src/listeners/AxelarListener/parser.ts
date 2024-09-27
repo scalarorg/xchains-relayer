@@ -33,7 +33,7 @@ export class Parser {
 
     return {
       id: eventId,
-      payload,
+      payload: payload.toString('hex'),
     };
   };
 
@@ -63,15 +63,17 @@ export class Parser {
 
     const eventId = removeQuote(event[`${key}.event_id`][0]);
 
-    const [hash, logIndex] = eventId.split('-');
-
-    const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle ContractCallApproved event.`;
+    const hash = eventId.split('-')[0];
 
     const payload = await this.db.findRelayDataById(eventId).then((data) => {
       return data?.callContract?.payload || data?.callContractWithToken?.payload;
     });
-    
-    if (!payload) throw new Error(errorMsg);
+
+    if (!payload) {
+      throw new Error(
+        `Not found eventId: ${eventId} in DB. Skip to handle ContractCallApproved event.`
+      );
+    }
 
     const data = {
       messageId: eventId,
@@ -79,7 +81,7 @@ export class Parser {
       sourceChain: removeQuote(event[`${key}.chain`][0]),
       destinationChain: removeQuote(event[`${key}.destination_chain`][0]),
       contractAddress: removeQuote(event[`${key}.contract_address`][0]),
-      payload: `0x${decodeBase64(payload)}`,
+      payload: `0x${decodeBase64(payload.toString('hex'))}`,
       payloadHash: `0x${decodeBase64(removeQuote(event[`${key}.payload_hash`][0]))}`,
     };
 

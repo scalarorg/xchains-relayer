@@ -19,6 +19,7 @@ export interface EvmNetworkConfig {
 }
 export interface BtcNetworkConfig {
   network: string;
+  id: string;
   chainId: string;
   type: string; //signer or broadcast
   host: string;
