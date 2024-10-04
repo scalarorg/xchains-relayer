@@ -10,11 +10,14 @@ export class BtcClient {
   private retryDelay: number;
   constructor(config: BtcNetworkConfig, _maxRetry = env.MAX_RETRY, _retryDelay = env.RETRY_DELAY) {
     this.config = config;
+    logger.info(`[BtcClient] Config: ${JSON.stringify(config)}`);
     this.client = new Client({
       network: config.network,
       host: config.host,
       username: config.user,
       password: config.password,
+      port: config.port,
+      ssl: config.ssl,
       wallet: 'legacy',
     });
 

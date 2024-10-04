@@ -26,6 +26,7 @@ export interface BtcNetworkConfig {
   port: number;
   user: string;
   password: string;
+  ssl?: boolean;
   privateKey?: string;
   address?: string;
 }
