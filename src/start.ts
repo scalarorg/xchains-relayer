@@ -1,4 +1,4 @@
-import { axelarChain, btcChains, cosmosChains, evmChains, rabbitmqConfigs } from 'config';
+import { axelarChain, btcChains, cosmosChains, evmChains, rabbitmqConfigs } from './config/chains';
 import { startAPIServer } from './api';
 import { logger } from './logger';
 import { startRelayer } from './relayer';

@@ -243,10 +243,7 @@ export async function handleCosmosToEvmApprovedEvent<
   logger.info(`[Scalar][CallEvm] ExecuteData: ${JSON.stringify(executeData)}`);
   logger.info(`[Scalar][CallEvm] DecodedExecuteData: ${JSON.stringify(decodedExecuteData)}`);
 
-  console.log({ evmClient });
-
   try {
-    console.log({ client: JSON.stringify(evmClient, null, 2) });
     const tx = await evmClient.gatewayExecute(executeData);
     if (!tx) {
       logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
