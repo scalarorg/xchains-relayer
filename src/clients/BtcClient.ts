@@ -21,6 +21,9 @@ export class BtcClient {
       wallet: 'legacy',
     });
 
+    
+
+
     // this.wallet = new Wallet(
     // chain.privateKey,
     // new ethers.providers.JsonRpcProvider(chain.rpcUrl)

@@ -243,14 +243,19 @@ export async function handleCosmosToEvmApprovedEvent<
   logger.info(`[Scalar][CallEvm] ExecuteData: ${JSON.stringify(executeData)}`);
   logger.info(`[Scalar][CallEvm] DecodedExecuteData: ${JSON.stringify(decodedExecuteData)}`);
 
-  const tx = await evmClient.gatewayExecute(executeData);
+  console.log({ evmClient });
 
-  if (!tx) {
-    logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
+  try {
+    console.log({ client: JSON.stringify(evmClient, null, 2) });
+    const tx = await evmClient.gatewayExecute(executeData);
+    if (!tx) {
+      logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
+    }
+    logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
+    return tx;
+  } catch (e) {
+    logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(e)}`);
   }
-  logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
-
-  return tx;
 }
 /*
  * ----- dApp Contract Call -----
