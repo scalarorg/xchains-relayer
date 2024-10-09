@@ -65,6 +65,8 @@ const handleBTCExecute = async (
   const executeInterface = new ethers.utils.Interface(executeABI);
   const executeDataDecoded = executeInterface.decodeFunctionData('execute', executeData);
 
+  logger.info('[execute] ExecuteDataDecoded', executeDataDecoded);
+
   const input = executeDataDecoded.input;
   return execute(btcBroadcastClient, btcSignerClient, db, input);
 };
