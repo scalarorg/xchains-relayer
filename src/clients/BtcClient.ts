@@ -21,9 +21,6 @@ export class BtcClient {
       wallet: 'legacy',
     });
 
-    
-
-
     // this.wallet = new Wallet(
     // chain.privateKey,
     // new ethers.providers.JsonRpcProvider(chain.rpcUrl)
@@ -116,5 +113,13 @@ export class BtcClient {
       logger.error('[testMempoolAcceptance] Failed to testMempoolAcceptance: ', e);
       throw e;
     }
+  }
+
+  public getPrivateKeyFromConfig(): string {
+    if (!this.config.privateKey) {
+      logger.error('[getPrivateKeyFromConfig] Private key is not set');
+      throw new Error('Private key is not set');
+    }
+    return this.config.privateKey;
   }
 }

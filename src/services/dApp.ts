@@ -1,6 +1,6 @@
 import { BtcClient } from '../clients/BtcClient';
-import { signPsbt } from '../utils/btc-utils';
 import { logger } from '../logger';
+import { signPsbt } from '../utils/btc-utils';
 
 export async function processBurningTxs(
   btcSignerClient: BtcClient,
@@ -28,7 +28,12 @@ async function signAndBroadcasting(
 ) {
   try {
     const serviceAddress = await btcSignerClient.getServiceAddress();
-    const privKey = await btcSignerClient.getPrivKeyFromLegacyWallet(serviceAddress);
+    // TODO: move this part to signing service
+
+    // const privKey = await btcSignerClient.getPrivKeyFromLegacyWallet(serviceAddress);
+    const privKey = btcSignerClient.getPrivateKeyFromConfig();
+    logger.debug('[signAndBroadcasting] privKey: ', privKey);
+
     const signedTx = await signPsbt(psbtb64, serviceAddress, privKey);
     const response = await btcBroadcastClient.submitSignedTx(signedTx);
     logger.info(`[signAndBroadcasting] Successfully broadcasted tx: ${response}`);
