@@ -74,5 +74,8 @@ export function getAddressType(address: string): [AddressType, Network] {
   } else if (address.startsWith('tb1p')) {
     return [AddressType.P2TR, networks.testnet];
   }
+
+  console.log({ address });
+
   throw new Error(`Unknown address: ${address}`);
 }

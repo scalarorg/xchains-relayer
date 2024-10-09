@@ -32,11 +32,11 @@ async function signAndBroadcasting(
 
     // const privKey = await btcSignerClient.getPrivKeyFromLegacyWallet(serviceAddress);
     const privKey = btcSignerClient.getPrivateKeyFromConfig();
-    logger.debug('[signAndBroadcasting] privKey: ', privKey);
+    console.log('[signAndBroadcasting] privKey: ', privKey);
 
     const signedTx = await signPsbt(psbtb64, serviceAddress, privKey);
     const response = await btcBroadcastClient.submitSignedTx(signedTx);
-    logger.info(`[signAndBroadcasting] Successfully broadcasted tx: ${response}`);
+    console.log(`[signAndBroadcasting] Successfully broadcasted tx: ${response}`);
     return response;
   } catch (e) {
     throw new Error(`Failed to broadcast: ${e}`);
