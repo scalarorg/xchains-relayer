@@ -61,7 +61,7 @@ const handleBTCExecute = async (
   db: DatabaseClient,
   executeData: string
 ) => {
-  const executeABI = ['function execute(bytes calldata input) external override'];
+  const executeABI = ['function execute(bytes calldata input) external'];
   const executeInterface = new ethers.utils.Interface(executeABI);
   console.log('Before: ', executeData);
 
