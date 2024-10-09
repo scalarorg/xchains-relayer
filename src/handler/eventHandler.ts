@@ -177,11 +177,11 @@ export async function handleCosmosApprovedEvent<
       return;
     }
 
+    console.log('[handleCosmosApprovedEvent] ExecutedResult: ', { executedResult });
+
     const batchedCommandId = result?.batchedCommandId;
 
     logger.info(`[BTC Tx Executed] BTC Tx: ${executedResult?.tx}`);
-
-    const info = await btcBroadcastClient.getTransaction(executedResult?.tx);
 
     const refPsbtBase64 = executedResult.psbtBase64;
 
@@ -189,6 +189,10 @@ export async function handleCosmosApprovedEvent<
     const txInputHash = psbtFromBase64.txInputs[0].hash.reverse().toString('hex');
     // this line isn't necessary but it lets us know that the variable is a hash with 0x prefix
     const refTxHash = txInputHash.startsWith('0x') ? txInputHash : `0x${txInputHash}`;
+    console.log('[handleCosmosApprovedEvent] RefTxHash: ', { refTxHash });
+
+    // TODO: 
+    const info = await btcBroadcastClient.getTransaction(executedResult?.tx);
 
     // CAUTION: Wrong flow, the problem is that the tx is broadcasted and update the status is success, the Right flow is Xchains-core need to approve then update status is approve then execute then update status is success
     await db.handleMultipleEvmToBtcEventsTx(event, info, refTxHash, batchedCommandId);

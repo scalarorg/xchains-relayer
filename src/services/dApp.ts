@@ -42,3 +42,4 @@ async function signAndBroadcasting(
     throw new Error(`Failed to broadcast: ${e}`);
   }
 }
+
