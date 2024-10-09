@@ -63,11 +63,17 @@ const handleBTCExecute = async (
 ) => {
   const executeABI = ['function execute(bytes calldata input) external override'];
   const executeInterface = new ethers.utils.Interface(executeABI);
+  console.log("Before: ", executeData);
+
   const executeDataDecoded = executeInterface.decodeFunctionData('execute', executeData);
 
-  logger.info('[execute] ExecuteDataDecoded', executeDataDecoded);
+  console.log('[execute] ExecuteDataDecoded', executeDataDecoded);
 
   const input = executeDataDecoded.input;
+
+  
+  console.log('[execute] Input', input);
+  
   return execute(btcBroadcastClient, btcSignerClient, db, input);
 };
 
