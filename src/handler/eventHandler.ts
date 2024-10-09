@@ -5,6 +5,7 @@ import { logger } from '../logger';
 import * as bitcoinjs from 'bitcoinjs-lib';
 
 import {
+  BtcTransactionReceipt,
   ContractCallSubmitted,
   ContractCallWithTokenSubmitted,
   EvmEvent,
@@ -20,7 +21,7 @@ import {
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { handleCosmosToBTCApprovedEvent } from './eventBTCHandler';
-import { Transaction } from 'bitcoinjs-lib';
+import { getMempoolTx } from '../utils/btc-utils';
 
 const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -191,13 +192,27 @@ export async function handleCosmosApprovedEvent<
     const refTxHash = txInputHash.startsWith('0x') ? txInputHash : `0x${txInputHash}`;
     console.log('[handleCosmosApprovedEvent] RefTxHash: ', { refTxHash });
 
-    // TODO: 
-    const info = await btcBroadcastClient.getTransaction(executedResult?.tx);
+    // TODO:
+    let receipt: BtcTransactionReceipt | null;
+
+    try {
+      receipt = await btcBroadcastClient.getTransaction(executedResult?.tx);
+    } catch (e) {
+      console.error('Error when fetching btc tx from testnet node');
+      receipt = await getMempoolTx(
+        '961f795e8970c4c53a8b0c43bcc842098dfbc7fb8e06709fe044fb830ac13a67',
+        btcBroadcastClient.config.network as any
+      );
+    }
+
+    if (!receipt) {
+      throw Error('Not found btc receipt tx');
+    }
 
     // CAUTION: Wrong flow, the problem is that the tx is broadcasted and update the status is success, the Right flow is Xchains-core need to approve then update status is approve then execute then update status is success
-    await db.handleMultipleEvmToBtcEventsTx(event, info, refTxHash, batchedCommandId);
+    await db.handleMultipleEvmToBtcEventsTx(event, receipt, refTxHash, batchedCommandId);
 
-    logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(info)}`);
+    logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(receipt)}`);
     return;
   }
   logger.error(`[handleCosmosApprovedEvent] No client found for chainId: ${id}`);

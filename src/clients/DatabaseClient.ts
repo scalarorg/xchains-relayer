@@ -456,7 +456,7 @@ export class DatabaseClient {
       destinationChain: event.args.destinationChain,
       txHash: tx?.txid.toLowerCase() || '',
       blockNumber: tx?.blockheight || 0,
-      logIndex: tx?.blockindex || 0,
+      logIndex: 0,
       commandId: batchedCommandId,
       status: Status.SUCCESS,
       referenceTxHash: refTxHash,

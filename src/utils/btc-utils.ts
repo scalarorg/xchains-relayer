@@ -1,4 +1,6 @@
+import { BtcTransactionReceipt } from './../types/btc';
 import { Network, Psbt, networks } from 'bitcoinjs-lib';
+import { env } from '../config';
 import { ECPairAPI, ECPairFactory, TinySecp256k1Interface } from 'ecpair';
 
 // You need to provide the ECC library. The ECC library must implement
@@ -75,7 +77,75 @@ export function getAddressType(address: string): [AddressType, Network] {
     return [AddressType.P2TR, networks.testnet];
   }
 
-  console.log({ address });
-
   throw new Error(`Unknown address: ${address}`);
 }
+
+interface BitcoinTransaction {
+  txid: string;
+  version: number;
+  locktime: number;
+  vin: TransactionInput[];
+  vout: TransactionOutput[];
+  size: number;
+  weight: number;
+  sigops: number;
+  fee: number;
+  status: TransactionStatus;
+}
+
+interface TransactionInput {
+  txid: string;
+  vout: number;
+  prevout: PrevOut;
+  scriptsig: string;
+  scriptsig_asm: string;
+  witness: string[];
+  is_coinbase: boolean;
+  sequence: number;
+  inner_witnessscript_asm: string;
+}
+
+interface PrevOut {
+  scriptpubkey: string;
+  scriptpubkey_asm: string;
+  scriptpubkey_type: string;
+  scriptpubkey_address: string;
+  value: number;
+}
+
+interface TransactionOutput {
+  scriptpubkey: string;
+  scriptpubkey_asm: string;
+  scriptpubkey_type: string;
+  scriptpubkey_address: string;
+  value: number;
+}
+
+interface TransactionStatus {
+  confirmed: boolean;
+  block_height: number;
+  block_hash: string;
+  block_time: number;
+}
+
+export const getMempoolTx = (txID: string, network: 'mainnet' | 'testnet' | 'regtest') => {
+  const prefix = network === 'mainnet' || network === 'regtest' ? '' : '/testnet';
+  const endpoint = `${env.MEMPOOL_API}${prefix}/api/tx`;
+
+  console.log({ network });
+
+  console.log(`[getMempoolTx] ${endpoint}/${txID}`);
+
+  return fetch(`${endpoint}/${txID}`)
+    .then((res) => {
+      console.log('[getMempoolTx] response', res);
+      return res.json();
+    })
+    .then((res: BitcoinTransaction) => {
+      return {
+        amount: res.vout[0].value,
+        txid: res.txid,
+        blockheight: res.status.block_height,
+      } as BtcTransactionReceipt;
+    });
+};

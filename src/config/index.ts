@@ -15,7 +15,7 @@ export const env = {
   DD_API_KEY: process.env.DD_API_KEY || '',
   CHAIN_ENV: process.env.CHAIN_ENV || 'testnet',
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
-  
+  MEMPOOL_API: process.env.MEMPOOL_API || "https://mempool.space"
 };
 
 export * from './chains';
