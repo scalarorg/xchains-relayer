@@ -128,6 +128,9 @@ interface TransactionStatus {
   block_time: number;
 }
 
+const maxRetries = 20;
+const retryDelay = 5000; // 1 second
+
 export const getMempoolTx = async (txID: string, network: 'mainnet' | 'testnet' | 'regtest') => {
   const prefix = network === 'mainnet' || network === 'regtest' ? '' : '/testnet';
   const endpoint = `${env.MEMPOOL_API}${prefix}/api/tx/${txID}`;
@@ -135,17 +138,24 @@ export const getMempoolTx = async (txID: string, network: 'mainnet' | 'testnet' 
   console.log({ network });
   console.log(`[getMempoolTx] ${endpoint}`);
 
-  try {
-    const res = await fetch(endpoint, {
-      method: 'GET',
-    });
-    const text = await res.text();
-    console.log('Response:', text);
-    const json = await res.json();
-    console.log('JSON:', json);
-    // rest of your code
-  } catch (error) {
-    console.error(error);
-    return null;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'GET',
+      });
+      const json = await res.json();
+      if (json && json.txid) {
+        return json;
+      }
+      console.log({ json });
+    } catch (error: any) {
+      console.error(`Attempt ${i + 1} failed:`, error);
+      if (i < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      } else {
+        console.error(`All retries failed. Giving up.`);
+        throw new Error(`All retries failed: ${error.message}`);
+      }
+    }
   }
 };
