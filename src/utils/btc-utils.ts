@@ -1,7 +1,7 @@
-import { BtcTransactionReceipt } from './../types/btc';
 import { Network, Psbt, networks } from 'bitcoinjs-lib';
-import { env } from '../config';
 import { ECPairAPI, ECPairFactory, TinySecp256k1Interface } from 'ecpair';
+import { env } from '../config';
+import { BtcTransactionReceipt } from 'types';
 
 // You need to provide the ECC library. The ECC library must implement
 // all the methods of the `TinySecp256k1Interface` interface.
@@ -140,21 +140,33 @@ export const getMempoolTx = async (txID: string, network: 'mainnet' | 'testnet' 
 
   for (let i = 0; i <= maxRetries; i++) {
     try {
-      const res = await fetch(endpoint, {
-        method: 'GET',
-      });
-      const json = await res.json();
-      if (json && json.txid) {
-        return json;
+      const res = await fetch(endpoint, { method: 'GET' });
+      console.log({ res });
+
+      // Check the content type to decide how to parse the response
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const json: BitcoinTransaction = await res.json();
+        console.log('JSON:', json);
+        if (json.txid) {
+          return {
+            amount: json.vout[0].value,
+            txid: json.txid,
+            blockheight: json.status.block_height,
+          } as BtcTransactionReceipt;
+        }
+      } else {
+        const text = await res.text(); // Log text if content type isn't JSON
+        console.error('Non-JSON response:', text);
+        throw new Error(`Expected JSON but received: ${text}`);
       }
-      console.log({ json });
     } catch (error: any) {
-      console.error(`Attempt ${i + 1} failed:`, error);
+      console.error(`Attempt ${i + 1} failed:`, error.message);
       if (i < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay)); // Retry after delay
       } else {
         console.error(`All retries failed. Giving up.`);
-        throw new Error(`All retries failed: ${error.message}`);
+        return null; // Return null after exhausting retries
       }
     }
   }

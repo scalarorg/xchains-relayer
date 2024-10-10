@@ -193,13 +193,21 @@ export async function handleCosmosApprovedEvent<
     console.log('[handleCosmosApprovedEvent] RefTxHash: ', { refTxHash });
 
     // TODO:
-    let receipt: BtcTransactionReceipt | null;
+    let receipt: Partial<BtcTransactionReceipt> | null | undefined;
 
     try {
       receipt = await btcBroadcastClient.getTransaction(executedResult?.tx);
     } catch (e) {
       console.error('Error when fetching btc tx from testnet node');
+
       receipt = await getMempoolTx(executedResult.tx, btcBroadcastClient.config.network as any);
+      if (receipt === null) {
+        console.error('Failed to retrieve mempool transaction data');
+        // Handle failure case here
+      } else {
+        console.log('Mempool transaction:', receipt);
+        // Process the result here
+      }
     }
 
     if (!receipt) {
@@ -207,7 +215,12 @@ export async function handleCosmosApprovedEvent<
     }
 
     // CAUTION: Wrong flow, the problem is that the tx is broadcasted and update the status is success, the Right flow is Xchains-core need to approve then update status is approve then execute then update status is success
-    await db.handleMultipleEvmToBtcEventsTx(event, receipt, refTxHash, batchedCommandId);
+    await db.handleMultipleEvmToBtcEventsTx(
+      event,
+      receipt as BtcTransactionReceipt,
+      refTxHash,
+      batchedCommandId
+    );
 
     logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(receipt)}`);
     return;
