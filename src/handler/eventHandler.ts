@@ -5,6 +5,7 @@ import { logger } from '../logger';
 import * as bitcoinjs from 'bitcoinjs-lib';
 
 import {
+  BtcTransactionReceipt,
   ContractCallSubmitted,
   ContractCallWithTokenSubmitted,
   EvmEvent,
@@ -20,7 +21,7 @@ import {
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { handleCosmosToBTCApprovedEvent } from './eventBTCHandler';
-import { Transaction } from 'bitcoinjs-lib';
+import { getMempoolTx } from '../utils/btc-utils';
 
 const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -177,11 +178,11 @@ export async function handleCosmosApprovedEvent<
       return;
     }
 
+    console.log('[handleCosmosApprovedEvent] ExecutedResult: ', { executedResult });
+
     const batchedCommandId = result?.batchedCommandId;
 
     logger.info(`[BTC Tx Executed] BTC Tx: ${executedResult?.tx}`);
-
-    const info = await btcBroadcastClient.getTransaction(executedResult?.tx);
 
     const refPsbtBase64 = executedResult.psbtBase64;
 
@@ -189,11 +190,26 @@ export async function handleCosmosApprovedEvent<
     const txInputHash = psbtFromBase64.txInputs[0].hash.reverse().toString('hex');
     // this line isn't necessary but it lets us know that the variable is a hash with 0x prefix
     const refTxHash = txInputHash.startsWith('0x') ? txInputHash : `0x${txInputHash}`;
+    console.log('[handleCosmosApprovedEvent] RefTxHash: ', { refTxHash });
+
+    // TODO:
+    let receipt: BtcTransactionReceipt | null;
+
+    try {
+      receipt = await btcBroadcastClient.getTransaction(executedResult?.tx);
+    } catch (e) {
+      console.error('Error when fetching btc tx from testnet node');
+      receipt = await getMempoolTx(executedResult.tx, btcBroadcastClient.config.network as any);
+    }
+
+    if (!receipt) {
+      throw Error('Not found btc receipt tx');
+    }
 
     // CAUTION: Wrong flow, the problem is that the tx is broadcasted and update the status is success, the Right flow is Xchains-core need to approve then update status is approve then execute then update status is success
-    await db.handleMultipleEvmToBtcEventsTx(event, info, refTxHash, batchedCommandId);
+    await db.handleMultipleEvmToBtcEventsTx(event, receipt, refTxHash, batchedCommandId);
 
-    logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(info)}`);
+    logger.info(`[BTC Tx Executed] BTC Receipt: ${JSON.stringify(receipt)}`);
     return;
   }
   logger.error(`[handleCosmosApprovedEvent] No client found for chainId: ${id}`);
@@ -243,14 +259,16 @@ export async function handleCosmosToEvmApprovedEvent<
   logger.info(`[Scalar][CallEvm] ExecuteData: ${JSON.stringify(executeData)}`);
   logger.info(`[Scalar][CallEvm] DecodedExecuteData: ${JSON.stringify(decodedExecuteData)}`);
 
-  const tx = await evmClient.gatewayExecute(executeData);
-
-  if (!tx) {
-    logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
+  try {
+    const tx = await evmClient.gatewayExecute(executeData);
+    if (!tx) {
+      logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(tx)}`);
+    }
+    logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
+    return tx;
+  } catch (e) {
+    logger.error(`[Scalar][CallEvm] Execute failed: ${JSON.stringify(e)}`);
   }
-  logger.debug(`[Scalar][CallEvm] Evm TxHash: ${JSON.stringify(tx)}`);
-
-  return tx;
 }
 /*
  * ----- dApp Contract Call -----

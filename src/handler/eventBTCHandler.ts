@@ -23,7 +23,7 @@ export async function handleCosmosToBTCApprovedEvent<
   db: DatabaseClient,
   event: IBCEvent<T>
 ) {
-  logger.debug(`[handleCosmosToBTCApprovedEvent] Event: ${JSON.stringify(event)}`);
+  console.log(`[handleCosmosToBTCApprovedEvent] Event: ${JSON.stringify(event)}`);
   const pendingCommands = await vxClient.getPendingCommands(event.args.destinationChain);
   logger.info(
     `[handleCosmosToBTCApprovedEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`
@@ -61,11 +61,18 @@ const handleBTCExecute = async (
   db: DatabaseClient,
   executeData: string
 ) => {
-  const executeABI = ['function execute(bytes calldata input) external override'];
+  const executeABI = ['function execute(bytes calldata input) external'];
   const executeInterface = new ethers.utils.Interface(executeABI);
+  console.log('Before: ', executeData);
+
   const executeDataDecoded = executeInterface.decodeFunctionData('execute', executeData);
 
+  console.log('[execute] ExecuteDataDecoded', executeDataDecoded);
+
   const input = executeDataDecoded.input;
+
+  console.log('Input', input);
+
   return execute(btcBroadcastClient, btcSignerClient, db, input);
 };
 
@@ -75,18 +82,16 @@ const execute = async (
   db: DatabaseClient,
   input: string
 ) => {
-  logger.info('[execute] ExecuteInit');
-  logger.info('[execute] Input', input);
+  console.log('[execute] Input', input);
 
   // Decode the input
   const [data, proof] = ethers.utils.defaultAbiCoder.decode(['bytes', 'bytes'], input);
-  logger.info('[execute] DecodedParam');
 
   // Hash the data and sign the message
   const dataHash = ethers.utils.keccak256(data);
   const messageHash = ethers.utils.hashMessage(ethers.utils.arrayify(dataHash));
 
-  logger.info('[execute] MessageHash', messageHash);
+  console.log('[execute] MessageHash', messageHash);
 
   // Validate proof with BTC auth module
   //FIXME: need to validate bitcoin on-chain
@@ -129,22 +134,22 @@ const execute = async (
       sourceEventIndex,
     ] = paramsDecoded;
 
-    logger.debug('[execute btc tx] Params Decoded: ', paramsDecoded);
-    logger.debug('[execute btc tx] Payload Hash: ', payloadHash);
+    console.log('[execute btc tx] Params Decoded: ', paramsDecoded);
+    console.log('[execute btc tx] Payload Hash: ', payloadHash);
 
     //TODO: need to join the CommandExecuted Table to check if the command is already executed or not
     const burningPsbtEncode = await db.getBurningTx(payloadHash);
     if (!burningPsbtEncode) {
       throw new Error('BurningPsbtNotFound');
     }
-    logger.debug('[execute btc tx] Burning Psbt Encoded: ', burningPsbtEncode);
+    console.log('[execute btc tx] Burning Psbt Encoded: ', burningPsbtEncode);
     // decode from ETH to BTC
     const burningPsbtDecode = ethers.utils.defaultAbiCoder.decode(
       ['string'],
       // this line isn't necessary but it's a good practice to ensure the string is prefixed with '0x'
       burningPsbtEncode.startsWith('0x') ? burningPsbtEncode : '0x' + burningPsbtEncode
     );
-    logger.debug('[execute btc tx] Burning Psbt Decoded: ', burningPsbtDecode);
+    console.log('[execute btc tx] Burning Psbt Decoded: ', burningPsbtDecode);
     const data = await processBurningTxs(btcSignerClient, btcBroadcastClient, burningPsbtDecode[0]);
     console.log({ psbt: burningPsbtDecode[0] as string });
     logger.info('[execute] Successfully process burning psbt: ', burningPsbtDecode[0]);

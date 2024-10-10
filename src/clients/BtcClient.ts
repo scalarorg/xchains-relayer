@@ -114,4 +114,14 @@ export class BtcClient {
       throw e;
     }
   }
+
+  public getPrivateKeyFromConfig(): string {
+    console.log('[getPrivateKeyFromConfig] Private key: ', this.config.privateKey);
+
+    if (!this.config.privateKey) {
+      console.error('[getPrivateKeyFromConfig] Private key is not set');
+      throw new Error('Private key is not set');
+    }
+    return this.config.privateKey;
+  }
 }

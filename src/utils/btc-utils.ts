@@ -1,4 +1,6 @@
+import { BtcTransactionReceipt } from './../types/btc';
 import { Network, Psbt, networks } from 'bitcoinjs-lib';
+import { env } from '../config';
 import { ECPairAPI, ECPairFactory, TinySecp256k1Interface } from 'ecpair';
 
 // You need to provide the ECC library. The ECC library must implement
@@ -74,5 +76,76 @@ export function getAddressType(address: string): [AddressType, Network] {
   } else if (address.startsWith('tb1p')) {
     return [AddressType.P2TR, networks.testnet];
   }
+
   throw new Error(`Unknown address: ${address}`);
 }
+
+interface BitcoinTransaction {
+  txid: string;
+  version: number;
+  locktime: number;
+  vin: TransactionInput[];
+  vout: TransactionOutput[];
+  size: number;
+  weight: number;
+  sigops: number;
+  fee: number;
+  status: TransactionStatus;
+}
+
+interface TransactionInput {
+  txid: string;
+  vout: number;
+  prevout: PrevOut;
+  scriptsig: string;
+  scriptsig_asm: string;
+  witness: string[];
+  is_coinbase: boolean;
+  sequence: number;
+  inner_witnessscript_asm: string;
+}
+
+interface PrevOut {
+  scriptpubkey: string;
+  scriptpubkey_asm: string;
+  scriptpubkey_type: string;
+  scriptpubkey_address: string;
+  value: number;
+}
+
+interface TransactionOutput {
+  scriptpubkey: string;
+  scriptpubkey_asm: string;
+  scriptpubkey_type: string;
+  scriptpubkey_address: string;
+  value: number;
+}
+
+interface TransactionStatus {
+  confirmed: boolean;
+  block_height: number;
+  block_hash: string;
+  block_time: number;
+}
+
+export const getMempoolTx = async (txID: string, network: 'mainnet' | 'testnet' | 'regtest') => {
+  const prefix = network === 'mainnet' || network === 'regtest' ? '' : '/testnet';
+  const endpoint = `${env.MEMPOOL_API}${prefix}/api/tx/${txID}`;
+
+  console.log({ network });
+  console.log(`[getMempoolTx] ${endpoint}`);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'GET',
+    });
+    const text = await res.text();
+    console.log('Response:', text);
+    const json = await res.json();
+    console.log('JSON:', json);
+    // rest of your code
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
