@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from 'ethers';
-import { AxelarClient, BtcClient, DatabaseClient } from '..';
+import { AxelarClient, DatabaseClient } from '..';
 import { logger } from '../logger';
 import { processBurningTxs } from '../services/dApp';
 import { ContractCallSubmitted, ContractCallWithTokenSubmitted, IBCEvent } from '../types';
@@ -16,13 +16,7 @@ const getBatchCommandIdFromSignTx = (signTx: any) => {
 
 export async function handleCosmosToBTCApprovedEvent<
   T extends ContractCallSubmitted | ContractCallWithTokenSubmitted
->(
-  vxClient: AxelarClient,
-  broadcastClient: BtcClient,
-  signerClient: BtcClient,
-  db: DatabaseClient,
-  event: IBCEvent<T>
-) {
+>(vxClient: AxelarClient, db: DatabaseClient, event: IBCEvent<T>) {
   console.log(`[handleCosmosToBTCApprovedEvent] Event: ${JSON.stringify(event)}`);
   const pendingCommands = await vxClient.getPendingCommands(event.args.destinationChain);
   logger.info(
@@ -50,17 +44,12 @@ export async function handleCosmosToBTCApprovedEvent<
 
   logger.info(`[handleCosmosToBTCApprovedEvent] BatchCommands: ${JSON.stringify(executeData)}`);
   return {
-    executedResult: handleBTCExecute(broadcastClient, signerClient, db, executeData),
+    executedResult: handleBTCExecute(db, executeData),
     batchedCommandId,
   };
 }
 
-const handleBTCExecute = async (
-  btcBroadcastClient: BtcClient,
-  btcSignerClient: BtcClient,
-  db: DatabaseClient,
-  executeData: string
-) => {
+const handleBTCExecute = async (db: DatabaseClient, executeData: string) => {
   const executeABI = ['function execute(bytes calldata input) external'];
   const executeInterface = new ethers.utils.Interface(executeABI);
   console.log('Before: ', executeData);
@@ -71,21 +60,16 @@ const handleBTCExecute = async (
 
   const input = executeDataDecoded.input;
 
-  console.log('Input', input);
-
-  return execute(btcBroadcastClient, btcSignerClient, db, input);
+  return execute(db, input);
 };
 
-const execute = async (
-  btcBroadcastClient: BtcClient,
-  btcSignerClient: BtcClient,
-  db: DatabaseClient,
-  input: string
-) => {
+const execute = async (db: DatabaseClient, input: string) => {
   console.log('[execute] Input', input);
 
   // Decode the input
   const [data, proof] = ethers.utils.defaultAbiCoder.decode(['bytes', 'bytes'], input);
+
+  console.log('[execute] proof', proof);
 
   // Hash the data and sign the message
   const dataHash = ethers.utils.keccak256(data);
@@ -134,7 +118,14 @@ const execute = async (
       sourceEventIndex,
     ] = paramsDecoded;
 
-    console.log('[execute btc tx] Params Decoded: ', paramsDecoded);
+    console.log('[execute btc tx] Params Decoded: ', {
+      sourceChain,
+      sourceAddress,
+      contractAddress,
+      payloadHash,
+      sourceTxHash,
+      sourceEventIndex,
+    });
     console.log('[execute btc tx] Payload Hash: ', payloadHash);
 
     //TODO: need to join the CommandExecuted Table to check if the command is already executed or not
@@ -150,7 +141,11 @@ const execute = async (
       burningPsbtEncode.startsWith('0x') ? burningPsbtEncode : '0x' + burningPsbtEncode
     );
     console.log('[execute btc tx] Burning Psbt Decoded: ', burningPsbtDecode);
-    const data = await processBurningTxs(btcSignerClient, btcBroadcastClient, burningPsbtDecode[0]);
+
+    // TODO: remove btcSignerClient and btcBroadcastClient
+
+    const data = await processBurningTxs(burningPsbtDecode[0], sourceChain, sourceTxHash);
+
     console.log({ psbt: burningPsbtDecode[0] as string });
     logger.info('[execute] Successfully process burning psbt: ', burningPsbtDecode[0]);
     //     // Mark the command as executed

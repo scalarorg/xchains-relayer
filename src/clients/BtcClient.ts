@@ -107,7 +107,7 @@ export class BtcClient {
    */
   public async testMempoolAcceptance(txHex: string): Promise<any> {
     try {
-      const response = await this.client.command('testmempoolaccept', [txHex]);
+      const response = await this.client.command('testmempoolaccept', [[txHex]]);
       return response;
     } catch (e) {
       logger.error('[testMempoolAcceptance] Failed to testMempoolAcceptance: ', e);
