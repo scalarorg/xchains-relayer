@@ -1,6 +1,5 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
-import { env } from 'config';
-import { logger } from 'logger';
+import { env } from '../config';
 
 export const MongoInstance = new MongoClient(env.MONGO_URI, {
   directConnection: true,
@@ -19,7 +18,7 @@ export const connectMongoDb = async () => {
     await MongoInstance.db('admin').command({ ping: 1 });
     console.log('Pinged your deployment. You successfully connected to MongoDB!');
   } catch (e) {
-    logger.error('Failed to connect to the database:', e);
+    console.error('Failed to connect to the database:', e);
     throw 'Failed to connect to the database';
   }
 };

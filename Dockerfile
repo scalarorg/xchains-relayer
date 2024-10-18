@@ -3,7 +3,6 @@ ARG ENV=dev
 RUN apt update && apt install -y jq
 WORKDIR /app
 
-COPY --from=scalarorg/xchains-core /usr/local/bin/axelard /usr/local/bin/
 COPY package.json yarn.lock* ./
 # Omit --production flag for TypeScript devDependencies
 
