@@ -164,13 +164,7 @@ export async function handleCosmosApprovedEvent<
   const btcSignerClient = btcClients.find((btc) => btc.config.id === id && btc.isSigner());
 
   if (btcBroadcastClient && btcSignerClient) {
-    const result = await handleCosmosToBTCApprovedEvent(
-      vxClient,
-      btcBroadcastClient,
-      btcSignerClient,
-      db,
-      event
-    );
+    const result = await handleCosmosToBTCApprovedEvent(vxClient, db, event);
 
     const executedResult = await result?.executedResult;
     if (!executedResult) {

@@ -14,8 +14,9 @@ export const env = {
   PORT: process.env.PORT || 3000,
   DD_API_KEY: process.env.DD_API_KEY || '',
   CHAIN_ENV: process.env.CHAIN_ENV || 'testnet',
-  LOG_LEVEL: process.env.LOG_LEVEL || "info",
-  MEMPOOL_API: process.env.MEMPOOL_API || "https://mempool.space"
+  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+  MEMPOOL_API: process.env.MEMPOOL_API || 'https://mempool.space',
+  MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017',
 };
 
 export * from './chains';

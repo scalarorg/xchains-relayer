@@ -33,6 +33,7 @@ import {
 } from '../types/contracts/IAxelarGateway';
 import { createCosmosEventSubject, createEvmEventSubject } from './subject';
 // import { filterCosmosDestination, mapEventToEvmClient } from './rxOperators';
+import { connectMongoDb } from '../mongo/db';
 import { startRabbitMQRelayer } from './rabbitmq';
 import { mapEventToEvmClient } from './rxOperators';
 
@@ -292,6 +293,7 @@ export async function startRelayer() {
 
   // Connect to the database
   await connectDb();
+  await connectMongoDb();
 
   const axelarListener = new AxelarListener(axelarChain.ws);
   const evmListeners = evmChains.map((evm) => new EvmListener(evm, cosmosChainNames));
