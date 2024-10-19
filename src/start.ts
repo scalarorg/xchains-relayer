@@ -1,3 +1,4 @@
+import { env } from './config';
 import { startAPIServer } from './api';
 import { axelarChain, btcChains, cosmosChains, evmChains, rabbitmqConfigs } from './config/chains';
 import { logger } from './logger';
@@ -11,6 +12,9 @@ const logConfig = async () => {
     axelarChain,
     rabbitmqConfigs,
     cosmosChains,
+  });
+  console.log({
+    projectEnv: env,
   });
 };
 
