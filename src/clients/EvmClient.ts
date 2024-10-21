@@ -172,7 +172,7 @@ export class EvmClient {
         return t.wait()
       })
       .catch(async (e) => {
-        if (e) logger.error(e);
+        console.error("Error submitting tx", e);
         logger.error(
           `[EvmClient.submitTx] Failed with Provider: ${this.chainConfig.rpcUrl }, Wallet address: ${this.wallet.address} to: ${tx.to} data: ${tx.data}`
         );
