@@ -36,6 +36,7 @@ import { createCosmosEventSubject, createEvmEventSubject } from './subject';
 import { connectMongoDb } from '../mongo/db';
 import { startRabbitMQRelayer } from './rabbitmq';
 import { mapEventToEvmClient } from './rxOperators';
+import { ElectrumRelayer } from './elects';
 
 // import { transferOperatorship } from '../transferOperatorship';
 // const sEvmCallContractWithToken = createEvmEventSubject<ContractCallWithTokenEventObject>();
@@ -320,4 +321,7 @@ export async function startRelayer() {
       logger.error(`Failed to listen to events for rabbitmq: ${e}`);
     }
   }
+  // Start the elects relayer
+  const electsRelayer = new ElectrumRelayer(db, axelarClient);
+  await electsRelayer.start();
 }
