@@ -1,4 +1,13 @@
+FROM golang:1.23.2-bookworm as electrum
+WORKDIR /app
+RUN git clone https://github.com/scalarorg/go-electrum.git
+WORKDIR /app/go-electrum
+
+COPY . .
+RUN go build -o ./bin/electrum ./main.go
+
 FROM node:18.20-bookworm
+COPY --from=electrum /app/go-electrum/bin/electrum /bin/electrum
 ARG ENV=dev
 RUN apt update && apt install -y jq
 WORKDIR /app
